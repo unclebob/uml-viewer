@@ -157,15 +157,28 @@
   (let [[r g b] (rgb-16 c)]
     (str "{" r ", " g ", " b "}")))
 
+(defn companion-argv
+  "Command line of the companion agent. `command` is a vector of strings in
+  which {rules} and {prompt} stand for the standing rules and the launch
+  prompt; nil means Grok."
+  [command]
+  (if command
+    (mapv #(-> %
+               (str/replace "{rules}" standing-rules)
+               (str/replace "{prompt}" launch-prompt))
+          command)
+    [(grok-executable) "--yolo" "--trust" "--rules" standing-rules
+     launch-prompt]))
+
 (defn new-session-args
   ([cwd] (new-session-args cwd (session-id cwd)))
-  ([cwd session]
-   ["new-session" "-d" "-s" session "-c" cwd
-    "-e" "GROK_THEME=terminal"
-    "-e" "GROK_TERMINAL_THEME=1"
-    "-e" "COLORTERM=truecolor"
-    (grok-executable) "--yolo" "--trust" "--rules" standing-rules
-    launch-prompt]))
+  ([cwd session] (new-session-args cwd session nil))
+  ([cwd session command]
+   (into ["new-session" "-d" "-s" session "-c" cwd
+          "-e" "GROK_THEME=terminal"
+          "-e" "GROK_TERMINAL_THEME=1"
+          "-e" "COLORTERM=truecolor"]
+         (companion-argv command))))
 
 (defn kill-session-args
   ([] (kill-session-args (current-session)))
@@ -189,7 +202,7 @@
   "Wake the companion Grok session. Returns false if tmux/session is missing."
   ([] (notify-agent! (System/getProperty "user.dir")))
   ([root]
-   (if-let [session (live-session root)]
+   (if-let [session (when-not (:no-companion? @!bridge) (live-session root))]
      (do
        (reset! !session-name session)
        (doseq [step (notify-steps session)]
@@ -313,16 +326,18 @@
     (tmux! "set-option" "-t" session "status" "off")))
 
 (defn open-in-terminal!
-  "Start this project's companion Grok in its own tmux session."
+  "Start this project's companion (Grok unless `command` is given) in its own
+  tmux session."
   ([] (open-in-terminal! (System/getProperty "user.dir")))
-  ([cwd]
+  ([cwd] (open-in-terminal! cwd nil))
+  ([cwd command]
    (let [session (session-id cwd)
          previous (:session (mailbox/read-companion cwd))]
      (reset! !session-name session)
      (when (and previous (not= previous session))
        (kill-companion-session! previous))
      (kill-companion-session! session)
-     (let [code (apply tmux! (new-session-args cwd session))]
+     (let [code (apply tmux! (new-session-args cwd session command))]
        (when-not (zero? code)
          (binding [*out* *err*]
            (println "UML viewer: could not start tmux session" session)))
@@ -798,11 +813,15 @@
   ([path source-impl]
    (start! path source-impl false))
   ([path source-impl restart?]
+   (start! path source-impl restart? {}))
+  ([path source-impl restart? {:keys [companion-command no-companion?]}]
    (swap! !bridge assoc :source source-impl)
    (let [root (overlay/metrics-root path)]
-     (if restart?
-       (remember-companion! root)
-       (open-in-terminal! root)))
+     (cond
+       ;; Whoever serves the mailbox is not ours to start, wake or kill.
+       no-companion? (swap! !bridge assoc :keep-agent true :no-companion? true)
+       restart? (remember-companion! root)
+       :else (open-in-terminal! root companion-command)))
    (q/sketch
     :title "UML viewer"
     :size [window-width window-height]

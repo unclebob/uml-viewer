@@ -401,6 +401,26 @@ does not contain the command. If Grok is busy, it finishes first, then reads
 the mailbox. If tmux is missing, the button still writes the file and the
 inspector says the session is not attached.
 
+### Other companions
+
+Grok is the default, not a requirement. The mailbox above is the whole
+contract, so any agent that reads `to-agent.edn` and writes `to-viewer.edn`
+can be the companion.
+
+```bash
+clj -M:run --companion-command='["claude" "--append-system-prompt" "{rules}" "{prompt}"]' examples/library.edn
+clj -M:run --no-companion examples/library.edn
+```
+
+`--companion-command=` takes a vector of strings and starts that agent in the
+tmux session instead of Grok. `{rules}` and `{prompt}` become the standing
+rules and the launch prompt Grok gets. Nothing else is added: the agent runs
+with exactly the flags and permissions you give it.
+
+`--no-companion` starts no agent, no tmux session and no Terminal window, and
+closing the window kills nothing. Use it when something else serves the
+mailbox, or to look at a diagram alone (press R to load the file).
+
 ## Language graphs
 
 Generating the IR asks `uml-viewer.graph` to scan a source tree. `:lang`
