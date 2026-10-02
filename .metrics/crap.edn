@@ -4,7 +4,7 @@
   {:name "mask-comments", :namespace "uml-viewer.python-language.graph-python", :complexity 6, :coverage 54.1176, :crap 9.4773}
   {:name "restamp-visible-edges", :namespace "uml-viewer.domain.hierarchy", :complexity 9, :coverage 88.6792, :crap 9.1175}
   {:name "detail-row-color", :namespace "uml-viewer.adapters.draw", :complexity 9, :coverage 92.8571, :crap 9.0295}
-  {:name "overlay-op", :namespace "uml-viewer.application.overlay", :complexity 9, :coverage 95.5556, :crap 9.0071}
+  {:name "overlay-op", :namespace "uml-viewer.application.overlay", :complexity 9, :coverage 95.8763, :crap 9.0057}
   {:name "claim-rank", :namespace "uml-viewer.application.overlay", :complexity 9, :coverage 96.0526, :crap 9.005}
   {:name "zoom-dir", :namespace "uml-viewer.application.events", :complexity 9, :coverage 97.8947, :crap 9.0008}
   {:name "hierarchical-document", :namespace "uml-viewer.domain.policy", :complexity 9, :coverage 97.8495, :crap 9.0008}
