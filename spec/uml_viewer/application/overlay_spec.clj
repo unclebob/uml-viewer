@@ -48,6 +48,29 @@
           (doseq [f (reverse (file-seq (io/file root)))]
             (io/delete-file f true))))))
 
+  (it "takes privacy from a crap entry when no mutation snapshot says"
+    (let [root (.getCanonicalPath (io/file "target" "overlay-crap-private"))
+          crap-dir (io/file root ".metrics")]
+      (.mkdirs crap-dir)
+      (spit (io/file crap-dir "crap.edn")
+            (pr-str {:entries [{:name "Open" :namespace "shop.db"
+                                :complexity 1 :coverage 100.0 :crap 1.0}
+                               {:name "dial" :namespace "shop.db"
+                                :complexity 2 :coverage 0.0 :crap 6.0 :private true}]}))
+      (try
+        (let [c (first (:classes (overlay/apply-metrics
+                                   {:hierarchical true
+                                    :classes [{:id :db :name "Db" :ns "shop.db"
+                                               :ops [{:name "Open"}]}]
+                                    :edges []}
+                                   (overlay/load-metrics root))))
+              op (fn [n] (first (filter #(= n (:name %)) (:ops c))))]
+          (should (:private (op "dial")))
+          (should-not (:private (op "Open"))))
+        (finally
+          (doseq [f (reverse (file-seq (io/file root)))]
+            (io/delete-file f true))))))
+
   (it "derives sites from killed, survived, and uncovered when sites is absent"
     (let [root (.getCanonicalPath (io/file "target" "overlay-legacy-sites"))
           mut-dir (io/file root ".metrics" "mutate" "skillBoard" "gateways")]
