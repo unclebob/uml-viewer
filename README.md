@@ -191,9 +191,9 @@ namespace is a `:dependency`. `requiring-resolve` of a quoted var is a
 `:stereotype :interface`. `defrecord` or `deftype` of a protocol is
 `:implements`. External `:require`s and `:import`s become **foreign**
 classes. The overlay fills Clojure members from `.metrics/`. TypeScript,
-Rust, and Python are separate scanners (see
-[Language graphs](#language-graphs)): one class per module, with exported
-members as `:ops`. The overlay joins each snapshot by `:ns`, then by
+Rust, Python, and Go are separate scanners (see
+[Language graphs](#language-graphs)): one class per module (per package
+for Go), with exported members as `:ops`. The overlay joins each snapshot by `:ns`, then by
 the class id.
 
 ### Do not invent layers (components)
@@ -252,9 +252,9 @@ Right (the ns tree):
  :foreign [quil]
  :order [main adapters application engine source graph
          clojure-language typescript-language rust-language python-language
-         domain]
+         go-language domain]
  :levels [[domain source graph clojure-language typescript-language
-           rust-language python-language]
+           rust-language python-language go-language]
           [engine]
           [application]
           [adapters]
@@ -515,13 +515,31 @@ project name. `list[Animal]` is not. Public module-level functions and
 classes are `:ops`. A module whose public classes are only `Protocol` or
 `ABC` bases, with no public functions, is `:stereotype :interface`.
 
+**Go** (`uml-viewer.go-language.graph-go`) emits one class per package
+directory, since a Go import names a package, not a file. The module path
+comes from the nearest `go.mod` at or above `:src`. A package's namespace
+is its directory under `:src`, so `internal/auth` with prefix
+`postmoderno` is `postmoderno.internal.auth` (`:internal.auth`). It skips
+`*_test.go` and directories named `testdata`, `vendor`, or
+`node_modules`, or starting with `.` or `_`. A directory with its own
+`go.mod` is another module and is not entered. An import of a scanned
+package is a dependency. Any other import is foreign, with `/` read as
+`.`: `github.com/jackc/pgx/v5` becomes `:github.com.jackc.pgx.v5`, and a
+listed `:foreign` prefix such as `github.com.jackc.pgx` collapses it. The
+standard library is foreign the same way (`net/http` is `:net.http`).
+`var _ pkg.Iface = (*T)(nil)` is `:implements` when `pkg` is a project
+package. Go types are structural, so nothing else is. Exported top-level
+funcs and types are `:ops`. Methods are not. A package whose exported
+names are all interfaces is `:stereotype :interface`. `:file` is the file
+named after the directory, else `doc.go`, else the first file.
+
 `merge-scans` links a TypeScript `invoke("read_text")` to the Rust class
 that owns `#[tauri::command] fn read_text`, as a `:dependency`. Two
 project classes with the same id are an error. When a dependency and an
 `:implements` edge join the same pair, the IR keeps `:implements`.
 
-CRAP and mutation for TypeScript, Rust, and Python come from separate
-tools. The overlay joins a snapshot to the class whose `:ns` equals that
+CRAP and mutation for TypeScript, Rust, Python, and Go come from
+separate tools. The overlay joins a snapshot to the class whose `:ns` equals that
 namespace. Otherwise the class id owns that name (`bookwriter.model`
 owns `model`), a dotted child rolls up (`pdf` owns `pdf.Layout`), and
 the policy prefix belongs to the single undotted Rust class. `::` is
@@ -653,7 +671,10 @@ extractor must satisfy `LanguageSource`:
 **TypeScript** (`uml-viewer.typescript-language.source-typescript`),
 **Rust** (`uml-viewer.rust-language.source-rust`), and **Python**
 (`uml-viewer.python-language.source-python`) open `:file` and find the
-exported declaration, the `fn`, or the `def`. The class card passes
+exported declaration, the `fn`, or the `def`. **Go**
+(`uml-viewer.go-language.source-go`) searches `:file` first, then the
+package's other non-test files, for the `func`, method, or `type`, and
+opens whichever file declares it. The class card passes
 `:lang` and `:file` from the class. A class with no `:lang` still uses
 the Clojure extractor that Main passes in. The protocol is the seam; do
 not special-case languages in the class card.
