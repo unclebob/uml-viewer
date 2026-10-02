@@ -197,7 +197,7 @@
                   :survived (or (:survived mut-fn) 0)
                   :uncovered (or (:uncovered mut-fn) 0)
                   :sites (counted-sites mut-fn))
-    (or (:private op) (:private mut-fn)) (assoc :private true)))
+    (or (:private op) (:private mut-fn) (:private crap-fn)) (assoc :private true)))
 
 (defn- ops-for-class [c crap-fns mut-fns]
   (let [by-name (into {} (map (juxt :name identity) crap-fns))

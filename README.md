@@ -533,6 +533,41 @@ funcs and types are `:ops`. Methods are not. A package whose exported
 names are all interfaces is `:stereotype :interface`. `:file` is the file
 named after the directory, else `doc.go`, else the first file.
 
+Go CRAP and mutation come from `tools/go-metrics`, which turns a
+coverprofile and [gremlins](https://github.com/go-gremlins/gremlins)
+reports into `.metrics/crap.edn` rows and `.metrics/mutate/<namespace>.edn`.
+It reads the Go packages and their `:ns` from the generated IR, so it
+agrees with the scanner about what a package is. Methods are
+`Type.Method`. Unexported names carry `:private true`, so they stay off the
+class box. A repeated name, such as one `init` per file, becomes
+`init (file.go:12)`, and the source window opens that one. Files that do not
+build on this platform (`_windows.go`, `//go:build ignore`) are left out,
+because no coverprofile here can cover them.
+
+Run it from the directory the IR was generated in:
+
+```bash
+go -C /path/to/uml-viewer/tools/go-metrics install .
+clj -M:ir                # or Regen; go-metrics reads :classes from it
+go test -coverpkg=./... -coverprofile=cover.out ./...
+(cd internal/team && GOFLAGS=-count=1 gremlins unleash --timeout-coefficient 5 -o /tmp/team.json)
+go-metrics -ir examples/shop.edn -cover cover.out -mutation internal/team=/tmp/team.json
+```
+
+`-coverpkg=./...` counts a line run by any package's tests, as cloverage
+does for Clojure. Rows another language's tool wrote to `crap.edn` are
+kept. go-metrics replaces only its own rows, which carry
+`:tool "go-metrics"`. A `-mutation` directory must be the one gremlins ran
+in, because its report names files relative to it. go-metrics refuses a
+report whose files are not in a package under that directory, rather than
+write snapshots that read as having no mutation sites.
+
+gremlins times each mutant against its own coverage run. A cached
+`go test` result makes that run take almost no time, and then every mutant
+times out and reads as killed, so pass `GOFLAGS=-count=1`. gremlins reports
+a `case` expression in a tagless `switch` as not covered whatever the
+tests do. Uncovered mutants do not change the kill ratio the color uses.
+
 `merge-scans` links a TypeScript `invoke("read_text")` to the Rust class
 that owns `#[tauri::command] fn read_text`, as a `:dependency`. Two
 project classes with the same id are an error. When a dependency and an
