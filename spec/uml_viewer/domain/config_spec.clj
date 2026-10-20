@@ -101,24 +101,49 @@
     (should= 1.0 (config/combined-grade nil 1.0))
     (should-be-nil (config/combined-grade nil nil))))
 
-(describe "worst child"
-  (it "picks the higher μ+σ CRAP map"
-    (should= {:mu 20} (config/worse-crap {:mu 1} {:mu 20}))
-    (should= {:mu 8} (config/worse-crap {:mu 8} nil))
-    (should= {:mu 3} (config/worse-crap nil {:mu 3})))
+(describe "pooled CRAP"
+  (it "weights each function once"
+    (should= {:mu 6.5 :max 20.0 :sigma 7.8 :n 4}
+             (config/pool-crap [{:ops [{:crap 2} {:crap 2} {:crap 2}]}
+                                {:ops [{:crap 20}]}])))
 
-  (it "treats a class with no CRAP data as worse than any measured score"
-    (should= {} (config/worse-crap {:mu 8} {}))
-    (should= {} (config/worse-crap {} {:mu 8})))
+  (it "uses :n on a summary when the module has no function scores"
+    (should= {:mu 6.5 :max 20.0 :sigma 7.8 :n 4}
+             (config/pool-crap [{:crap {:mu 2 :sigma 0 :max 2 :n 3}}
+                                {:crap {:mu 20 :sigma 0 :max 20 :n 1}}])))
 
-  (it "picks the lower mutation ratio"
-    (let [good {:killed 9 :survived 1}
-          bad {:killed 1 :survived 1}]
-      (should= bad (config/worse-mutants good bad))
-      (should= good (config/worse-mutants good nil))
-      (should= bad (config/worse-mutants nil bad))))
+  (it "counts a module with no CRAP as red, once per function"
+    (should= {:mu 5.0 :max 20.0 :sigma 6.7 :n 12}
+             (config/pool-crap [{:crap {:mu 2 :sigma 0 :max 2 :n 10}}
+                                {:ops [{:name "a"} {:name "b"}]}])))
 
-  (it "keeps a measured ratio when the other class has no mutant data"
-    (let [good {:killed 9 :survived 1}]
-      (should= good (config/worse-mutants good {}))
-      (should= good (config/worse-mutants {} good)))))
+  (it "counts one red function when a module lists no ops"
+    (should= {:mu 11.0 :max 20.0 :sigma 9.0 :n 2}
+             (config/pool-crap [{:crap {:mu 2 :sigma 0 :max 2 :n 1}}
+                                {}])))
+
+  (it "trusts a rolled summary over the module's own ops"
+    (should= {:mu 2.0 :max 2.0 :sigma 0.0 :n 10}
+             (config/pool-crap [{:crap {:mu 2 :sigma 0 :max 2 :n 10}
+                                 :ops [{:crap 20}]}]
+                               true))))
+
+(describe "pooled mutants"
+  (it "sums killed and survived"
+    (should= {:killed 10 :survived 2}
+             (config/pool-mutants [{:killed 9 :survived 1}
+                                   {:killed 1 :survived 1}])))
+
+  (it "counts an unscored module as failed trials, one per function"
+    (should= {:killed 9 :survived 1 :mut-gap 2}
+             (config/pool-mutants [{:killed 9 :survived 1}
+                                   {:ops [{:name "a"} {:name "b"}]}])))
+
+  (it "keeps a rolled gap when pooling again"
+    (should= {:killed 9 :survived 1 :mut-gap 3}
+             (config/pool-mutants [{:killed 9 :survived 1 :mut-gap 1}
+                                   {:ops [{:name "a"} {:name "b"}]}])))
+
+  (it "treats mut-gap as failed trials in the ratio"
+    (should= (/ 9.0 12.0)
+             (config/mutation-ratio {:killed 9 :survived 1 :mut-gap 2}))))

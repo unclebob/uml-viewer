@@ -110,28 +110,16 @@
         (str/starts-with? (name (:id c)) pfx))))
 
 (defn- rolled-crap
-  "Worst (μ+σ) among `id` and its descendants.
-  A class with no CRAP data counts as red."
+  "Function-weighted μ, max, and σ for `id` and its descendants.
+  A class with no CRAP data counts as red, once per function."
   [classes id]
-  (let [worst (reduce config/worse-crap nil
-                      (keep (fn [c]
-                              (when (under-id? c id)
-                                (or (:crap c) {})))
-                            classes))]
-    (when (:mu worst)
-      worst)))
+  (config/pool-crap (filter #(under-id? % id) classes)))
 
 (defn- rolled-mutants
-  "Worst mutation ratio among `id` and its descendants.
-  A class with no mutant data counts as red."
+  "Summed mutants for `id` and its descendants.
+  A class with no mutant data counts as one failed trial per function."
   [classes id]
-  (let [worst (reduce config/worse-mutants nil
-                      (keep (fn [c]
-                              (when (under-id? c id)
-                                (select-keys c [:killed :survived :uncovered])))
-                            classes))]
-    (when (or (:killed worst) (:survived worst))
-      worst)))
+  (config/pool-mutants (filter #(under-id? % id) classes)))
 
 (defn- rolled-level
   "Highest (outermost) :level among `id` and its descendants."
@@ -164,9 +152,7 @@
 (defn- with-leaf-scores [m leaf crap mut]
   (cond-> m
     crap (assoc :crap crap)
-    mut (assoc :killed (:killed mut)
-               :survived (:survived mut)
-               :uncovered (:uncovered mut))
+    mut (merge mut)
     (:coverage leaf) (assoc :coverage (:coverage leaf))))
 
 (defn- with-leaf-members [m leaf kids hide?]
@@ -395,17 +381,13 @@
    :hide-members true})
 
 (defn- with-metrics [dummy classes]
-  (let [crap (reduce config/worse-crap nil
-                     (map (fn [c] (or (:crap c) {})) classes))
-        mut (reduce config/worse-mutants nil
-                    (map #(select-keys % [:killed :survived :uncovered]) classes))
+  (let [crap (config/pool-crap classes)
+        mut (config/pool-mutants classes)
         lv (when (seq (keep :level classes))
              (apply max (keep :level classes)))]
-    (cond-> dummy
-      (:mu crap) (assoc :crap crap)
-      (or (:killed mut) (:survived mut))
-      (assoc :killed (:killed mut) :survived (:survived mut)
-             :uncovered (:uncovered mut))
+    (cond-> (dissoc dummy :crap :killed :survived :uncovered :mut-gap)
+      crap (assoc :crap crap)
+      mut (merge mut)
       (some? lv) (assoc :level lv))))
 
 (defn- ensure-pkg-dummies [view]
@@ -541,9 +523,8 @@
 (defn- nested-group-box
   [group kids]
   (let [id (:id group)
-        crap (reduce config/worse-crap nil (keep :crap kids))
-        mut (reduce config/worse-mutants nil
-                    (map #(select-keys % [:killed :survived :uncovered]) kids))
+        crap (config/pool-crap kids)
+        mut (config/pool-mutants kids)
         lv (when (seq (keep :level kids))
              (apply max (keep :level kids)))]
     (cond-> {:id id
@@ -558,10 +539,8 @@
                                 :name (module-name c)
                                 :drill? (boolean (:drill? c))})
                              kids)}
-      (:mu crap) (assoc :crap crap)
-      (or (:killed mut) (:survived mut))
-      (assoc :killed (:killed mut) :survived (:survived mut)
-             :uncovered (:uncovered mut))
+      crap (assoc :crap crap)
+      mut (merge mut)
       (some? lv) (assoc :level lv))))
 
 (defn- resolve-which [doc which]

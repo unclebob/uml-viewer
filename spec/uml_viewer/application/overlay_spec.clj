@@ -117,6 +117,27 @@
           (doseq [f (reverse (file-seq (io/file "target" "overlay-walk")))]
             (io/delete-file f true))))))
 
+  (it "keeps the newer mutation snapshot when two files name one namespace"
+    (let [root (.getCanonicalPath (io/file "target" "overlay-newer-snapshot"))
+          dotted (io/file root ".metrics" "mutate" "demo.config.edn")
+          fresh (io/file root ".metrics" "mutate" "demo" "config.edn")]
+      (.mkdirs (.getParentFile fresh))
+      (spit fresh (pr-str {:source "src/demo/config.clj"
+                           :forms [{:id "defn/pool-crap" :killed 2 :survived 0}]}))
+      (spit dotted (pr-str {:namespace "demo.config"
+                            :forms [{:id "defn/worse-crap" :killed 1 :survived 9}]}))
+      (try
+        (.setLastModified dotted 2000)
+        (.setLastModified fresh 1000)
+        (should= "defn/worse-crap"
+                 (:id (first (:forms (get (overlay/load-mutate root) "demo.config")))))
+        (.setLastModified fresh 3000)
+        (should= "defn/pool-crap"
+                 (:id (first (:forms (get (overlay/load-mutate root) "demo.config")))))
+        (finally
+          (doseq [f (reverse (file-seq (io/file root)))]
+            (io/delete-file f true))))))
+
   (it "leaves a document alone when there is no snapshot"
     (let [d (ir/normalize {:packages [{:id :p :label "P"
                                        :classes [{:id :a :name "A"}]}]

@@ -70,13 +70,18 @@
              grade-best grade-mid grade-worst))))
 
 (defn mutation-ratio
-  "Killed / (killed + survived), or nil when there is no mutant data."
+  "Killed / (killed + survived + missing-function gap).
+  Nil when there is no mutant data and no gap.
+  `:mut-gap` counts unscored functions as failed trials."
   [m]
   (when (map? m)
     (let [k (:killed m)
-          s (:survived m)]
-      (when (or k s)
-        (let [n (+ (double (or k 0)) (double (or s 0)))]
+          s (:survived m)
+          gap (:mut-gap m)]
+      (when (or (some? k) (some? s) (and gap (pos? gap)))
+        (let [n (+ (double (or k 0))
+                   (double (or s 0))
+                   (double (or gap 0)))]
           (when (pos? n)
             (/ (double (or k 0)) n)))))))
 
@@ -96,39 +101,136 @@
     (when (seq xs)
       (/ (double (reduce + xs)) (count xs)))))
 
-(defn worse-crap
-  "The CRAP map with higher μ+σ.
-  Nil is no candidate yet. A map with no μ counts as red."
-  [a b]
+(defn- round1
+  "Nearest tenth. Divide the rounded integer so the double is exact."
+  [x]
+  (double (/ (Math/round (* 10.0 (double x))) 10)))
+
+(defn- score-of [crap]
   (cond
-    (nil? a) b
-    (nil? b) a
-    :else
-    (let [ra (crap-risk a)
-          rb (crap-risk b)]
-      (cond
-        (nil? ra) a
-        (nil? rb) b
-        (> ra rb) a
-        :else b))))
+    (number? crap) (double crap)
+    (and (map? crap) (some? (:mu crap))) (double (:mu crap))))
 
-(defn- lower-ratio [a b ra rb]
-  (if (< ra rb) a b))
+(defn- op-scores [class]
+  (keep #(score-of (:crap %)) (:ops class)))
 
-(defn- worse-ratio [a b]
-  (let [ra (mutation-ratio a)
-        rb (mutation-ratio b)]
+(defn function-weight
+  "Functions listed on a module, or one when it lists none."
+  [class]
+  (let [n (count (:ops class))]
+    (if (pos? n) n 1)))
+
+(defn- score-group [scores]
+  (let [xs (vec scores)
+        n (count xs)
+        mu (/ (reduce + xs) n)
+        mx (apply max xs)
+        var (/ (reduce + (map #(let [d (- % mu)] (* d d)) xs)) n)]
+    {:n n :mu mu :sigma (Math/sqrt var) :max mx}))
+
+(defn- round-group [{:keys [n mu sigma max]}]
+  {:mu (round1 mu)
+   :max (round1 max)
+   :sigma (round1 sigma)
+   :n (long n)})
+
+(defn summarize-scores
+  "μ, max, population σ, and function count of CRAP scores.
+  Rounded to 0.1. Empty input is nil."
+  [scores]
+  (let [xs (keep score-of scores)]
+    (when (seq xs)
+      (round-group (score-group xs)))))
+
+(defn- red-group [n]
+  (let [red (double (:red crap-thresholds))]
+    {:n n :mu red :sigma 0.0 :max red}))
+
+(defn- summary-weight [class summary scores]
+  (let [n (:n summary)]
     (cond
-      (and (nil? ra) (nil? rb)) a
-      (nil? ra) b
-      (nil? rb) a
-      :else (lower-ratio a b ra rb))))
+      (and n (pos? n)) (long n)
+      (seq scores) (count scores)
+      :else (function-weight class))))
 
-(defn worse-mutants
-  "The killed/survived pair with the lower (worse) mutation ratio.
-  Nil is no candidate yet. A pair with no ratio yields to a measured one."
-  [a b]
-  (cond
-    (nil? a) b
-    (nil? b) a
-    :else (worse-ratio a b)))
+(defn- known-group [n summary]
+  {:n n
+   :mu (double (:mu summary))
+   :sigma (double (or (:sigma summary) 0))
+   :max (double (or (:max summary) (:mu summary)))})
+
+(defn- crap-sample
+  "One module as an unrounded CRAP group.
+  Function scores are the sample. With `rolled?`, a summary that
+  already covers the subtree wins over local ops.
+  No CRAP data is the red threshold, once per function."
+  [class rolled?]
+  (let [scores (op-scores class)
+        summary (:crap class)
+        summary? (and (map? summary) (some? (:mu summary)))]
+    (cond
+      (and rolled? summary?)
+      (known-group (summary-weight class summary scores) summary)
+
+      (seq scores)
+      (score-group scores)
+
+      summary?
+      (known-group (summary-weight class summary scores) summary)
+
+      :else
+      (red-group (function-weight class)))))
+
+(defn- combine-groups [groups]
+  (let [groups (filter #(and % (pos? (:n %))) groups)]
+    (when (seq groups)
+      (let [n (reduce + (map :n groups))
+            sum-w (reduce + (map #(* (:n %) (:mu %)) groups))
+            sum-m2 (reduce + (map #(let [{:keys [n mu sigma]} %]
+                                      (* n (+ (* sigma sigma) (* mu mu))))
+                                  groups))
+            mx (apply max (map :max groups))
+            mu (/ sum-w n)
+            var (max 0.0 (- (/ sum-m2 n) (* mu mu)))]
+        (round-group {:n n :mu mu :sigma (Math/sqrt var) :max mx})))))
+
+(defn- module? [c]
+  (not (or (:foreign c) (= :oval (:shape c)))))
+
+(defn pool-crap
+  "Function-weighted μ, max, and σ across modules.
+  Each function weighs one. A module with no CRAP counts as the red
+  threshold once per function (its ops, or one). `rolled?` is true when
+  each `:crap` already pools that module's subtree."
+  ([classes] (pool-crap classes false))
+  ([classes rolled?]
+   (combine-groups (map #(crap-sample % rolled?)
+                        (filter module? classes)))))
+
+(defn- has-mutants? [c]
+  (or (some? (:killed c)) (some? (:survived c))))
+
+(defn- mutant-gap
+  "Failed trials already rolled, or one per function when this module
+  has no mutant data."
+  [c]
+  (if (or (has-mutants? c) (some? (:mut-gap c)))
+    (or (:mut-gap c) 0)
+    (function-weight c)))
+
+(defn pool-mutants
+  "Summed killed, survived, and uncovered across modules.
+  A module with no mutant data adds `:mut-gap` failed trials, one per
+  function. Counts on the map stay the measured totals."
+  [classes]
+  (let [classes (filter module? classes)
+        measured (filter has-mutants? classes)
+        k (reduce + 0 (map #(or (:killed %) 0) measured))
+        s (reduce + 0 (map #(or (:survived %) 0) measured))
+        uncovered (keep :uncovered classes)
+        gap (reduce + 0 (map mutant-gap classes))]
+    (when (or (seq measured) (pos? gap))
+      (cond-> {}
+        (seq measured) (assoc :killed (long k) :survived (long s))
+        (seq uncovered) (assoc :uncovered (long (reduce + uncovered)))
+        (pos? gap) (assoc :mut-gap (long gap))))))

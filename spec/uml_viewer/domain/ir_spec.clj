@@ -136,11 +136,12 @@
     (let [d (ir/normalize
               {:packages
                [{:id 'dom :label "D"
-                 :crap {:mu 1 :sd 0.2}
+                 :crap {:mu 1 :sd 0.2 :n 4}
                  :classes [{:id 'a :name "A"}]}]
                :edges []})]
       (should= :dom (get-in d [:packages 0 :id]))
-      (should= 0.2 (get-in d [:packages 0 :crap :sigma]))))
+      (should= 0.2 (get-in d [:packages 0 :crap :sigma]))
+      (should= 4 (get-in d [:packages 0 :crap :n]))))
 
   (it "defaults title and direction"
     (let [d (ir/normalize

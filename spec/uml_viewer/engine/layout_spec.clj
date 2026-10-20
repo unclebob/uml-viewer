@@ -144,26 +144,26 @@
       (should (some #{"A"} texts))
       (should-not (some #(re-find #"μ" %) texts))))
 
-  (it "paints a package title without μ/max/σ and inherits the worst child colors"
+  (it "paints a package title without μ/max/σ and pools child CRAP by function count"
     (let [d (ir/normalize
               {:packages
                [{:id :p :label "P"
                  :classes [{:id :a :name "A"
-                            :crap {:mu 2.0 :max 2.0 :sigma 0}
+                            :crap {:mu 2.0 :max 2.0 :sigma 0 :n 3}
                             :killed 9 :survived 1}
                            {:id :b :name "B"
-                            :crap {:mu 20.0 :max 20.0 :sigma 0}
+                            :crap {:mu 20.0 :max 20.0 :sigma 0 :n 1}
                             :killed 1 :survived 1}]}]
                :edges []})
           scene (layout/layout d)
           p (first (:packages scene))]
       (should= "P" (:title p))
       (should-not (re-find #"μ" (or (:title p) "")))
-      (should= 20.0 (get-in p [:crap :mu]))
-      (should= 1 (:killed p))
-      (should= 1 (:survived p))))
+      (should= {:mu 6.5 :max 20.0 :sigma 7.8 :n 4} (:crap p))
+      (should= 10 (:killed p))
+      (should= 2 (:survived p))))
 
-  (it "keeps measured mutants when a child has no mutant data"
+  (it "counts a child with no mutant data as one failed trial per function"
     (let [d (ir/normalize
               {:packages
                [{:id :p :label "P"
@@ -171,15 +171,17 @@
                             :crap {:mu 2.0 :max 2.0 :sigma 0}
                             :killed 9 :survived 1}
                            {:id :b :name "B"
-                            :crap {:mu 20.0 :max 20.0 :sigma 0}}]}]
+                            :crap {:mu 20.0 :max 20.0 :sigma 0 :n 1}
+                            :ops [{:name "a"} {:name "b"}]}]}]
                :edges []})
           scene (layout/layout d)
           p (first (:packages scene))]
-      (should= 20.0 (get-in p [:crap :mu]))
+      (should= {:mu 11.0 :max 20.0 :sigma 9.0 :n 2} (:crap p))
       (should= 9 (:killed p))
-      (should= 1 (:survived p))))
+      (should= 1 (:survived p))
+      (should= 2 (:mut-gap p))))
 
-  (it "inherits red CRAP when a child has no CRAP data"
+  (it "tints CRAP when a child has no CRAP data"
     (let [d (ir/normalize
               {:packages
                [{:id :p :label "P"
@@ -191,9 +193,9 @@
                :edges []})
           scene (layout/layout d)
           p (first (:packages scene))]
-      (should-be-nil (:crap p))
-      (should= 1 (:killed p))
-      (should= 1 (:survived p))))
+      (should= {:mu 11.0 :max 20.0 :sigma 9.0 :n 2} (:crap p))
+      (should= 10 (:killed p))
+      (should= 2 (:survived p))))
 
   (it "lays an LR hub to the left of its targets"
     (let [scene (layout/layout hub)

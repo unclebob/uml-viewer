@@ -2,6 +2,7 @@
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str]
+            [uml-viewer.domain.config :as config]
             [uml-viewer.domain.ir :as ir]))
 
 (defn- read-edn [f]
@@ -31,6 +32,8 @@
         (str/replace #"_" "-"))))
 
 (defn load-mutate
+  "One snapshot per namespace. When a dotted file and a path-under-src
+  file both name that namespace, the newer file wins."
   [root]
   (reduce (fn [acc f]
             (if-let [data (read-edn f)]
@@ -38,7 +41,7 @@
                 (cond-> acc ns-name (assoc ns-name data)))
               acc))
           {}
-          (or (mutate-files root) [])))
+          (sort-by #(.lastModified %) (or (mutate-files root) []))))
 
 (defn metrics-root
   "Directory that contains `.metrics`, walking up from `path` (file or dir).
@@ -174,16 +177,7 @@
     (/ (double cov) 100.0)))
 
 (defn- class-crap [scores]
-  (when (seq scores)
-    (let [xs (mapv double scores)
-          n (count xs)
-          mu (/ (reduce + xs) n)
-          mx (apply max xs)
-          var (/ (reduce + (map #(let [d (- % mu)] (* d d)) xs)) n)
-          sd (Math/sqrt var)]
-      {:mu (* 0.1 (Math/round (* 10.0 mu)))
-       :max (* 0.1 (Math/round (* 10.0 mx)))
-       :sigma (* 0.1 (Math/round (* 10.0 sd)))})))
+  (config/summarize-scores scores))
 
 (defn- counted-sites
   "Site total from the snapshot. Older files omit `:sites` and record

@@ -357,7 +357,7 @@
       (should-be-nil (:out-deps impl))
       (should-not (some #(= :quil (% 1)) edges))))
 
-  (it "rolls a parent layer's crap up from the worst μ+σ descendant"
+  (it "rolls a parent layer's CRAP by function count"
     (let [g (update graph :classes
                     (fn [cs]
                       (mapv (fn [c]
@@ -374,10 +374,22 @@
                                 (mapcat :classes (:packages view))))
           layout (first (filter #(= :layout (:id %))
                                 (mapcat :classes (:packages view))))]
-      (should= {:mu 8.0 :max 9.0 :sigma 2.0} (:crap source))
+      (should= {:mu 4.5 :max 9.0 :sigma 3.8 :n 2} (:crap source))
       (should= {:mu 2.0 :max 3.0 :sigma 1.0} (:crap layout))))
 
-  (it "rolls a parent layer's mutants up from the worst child ratio"
+  (it "weights a directory's CRAP by function count, not by module count"
+    (let [g {:classes [{:id :engine :ns "demo.engine"
+                        :ops [{:crap 2} {:crap 2} {:crap 2}]}
+                       {:id :engine.layout :ns "demo.engine.layout"
+                        :ops [{:crap 20}]}]
+             :edges []}
+          doc (policy/apply-policy {:hierarchical true} g)
+          view (hierarchy/view-at doc [])
+          engine (first (filter #(= :engine (:id %))
+                                (mapcat :classes (:packages view))))]
+      (should= {:mu 6.5 :max 20.0 :sigma 7.8 :n 4} (:crap engine))))
+
+  (it "sums a parent layer's mutants and keeps an unscored sibling as a gap"
     (let [g (update graph :classes
                     (fn [cs]
                       (mapv (fn [c]
@@ -394,17 +406,19 @@
                                 (mapcat :classes (:packages view))))
           layout (first (filter #(= :layout (:id %))
                                 (mapcat :classes (:packages view))))]
-      (should= 1 (:killed source))
+      (should= 9 (:killed source))
       (should= 1 (:survived source))
+      (should-be-nil (:mut-gap source))
       (should= 9 (:killed layout))
       (should= 1 (:survived layout))))
 
-  (it "keeps a measured child when a sibling has no mutant counts"
+  (it "counts an unscored sibling as one failed trial per function"
     (let [g (update graph :classes
                     (fn [cs]
                       (mapv (fn [c]
                               (case (:id c)
                                 :layout (assoc c :killed 9 :survived 1)
+                                :source.clojure (assoc c :ops [{:name "a"} {:name "b"}])
                                 :source (assoc c :killed 8 :survived 0)
                                 c))
                             cs)))
@@ -416,6 +430,7 @@
                                 (mapcat :classes (:packages view))))]
       (should= 8 (:killed source))
       (should= 0 (:survived source))
+      (should= 2 (:mut-gap source))
       (should= 9 (:killed layout))
       (should= 1 (:survived layout))))
 
@@ -453,7 +468,7 @@
           directory (first (filter #(= :source (:id %))
                                    (mapcat :classes (:packages root))))]
       (should= {:mu 1.0 :max 1.0 :sigma 0.0} (:crap source))
-      (should-be-nil (:crap directory))))
+      (should= {:mu 10.5 :max 20.0 :sigma 9.5 :n 2} (:crap directory))))
 
   (it "keeps a source file's own mutants when a nested file is worse"
     (let [g (update graph :classes
@@ -509,7 +524,7 @@
                            (mapcat :classes (:packages view))))]
       (should= "GraphPython" (:name c))))
 
-  (it "treats a child with no CRAP as the worst (red) score"
+  (it "tints a parent with a child that has no CRAP, once per function"
     (let [g (update graph :classes
                     (fn [cs]
                       (mapv (fn [c]
@@ -524,7 +539,7 @@
                                 (mapcat :classes (:packages view))))
           layout (first (filter #(= :layout (:id %))
                                 (mapcat :classes (:packages view))))]
-      (should-be-nil (:crap source))
+      (should= {:mu 10.5 :max 20.0 :sigma 9.5 :n 2} (:crap source))
       (should= {:mu 2.0 :max 3.0 :sigma 1.0} (:crap layout))))
 
   (it "titles modules with the last ns segment, not the component prefix"

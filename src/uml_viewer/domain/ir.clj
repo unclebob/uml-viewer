@@ -13,9 +13,10 @@
   (cond
     (nil? x) nil
     (number? x) {:mu (double x) :max (double x) :sigma 0.0}
-    (map? x) {:mu (some-> (:mu x) double)
-              :max (double (or (:max x) (:mu x) 0))
-              :sigma (double (or (:sigma x) (:sd x) 0))}
+    (map? x) (cond-> {:mu (some-> (:mu x) double)
+                      :max (double (or (:max x) (:mu x) 0))
+                      :sigma (double (or (:sigma x) (:sd x) 0))}
+               (and (:n x) (pos? (:n x))) (assoc :n (long (:n x))))
     :else (throw (ex-info "crap must be a number or {:mu :max :sigma}" {:value x}))))
 
 (defn- as-coverage [x]

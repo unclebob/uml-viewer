@@ -81,6 +81,7 @@
   {:from :main.uml-viewer, :to :rust-language.source-rust, :kind :dependency}
   {:from :adapters.sketch, :to :application.events, :kind :dependency}
   {:from :application.document, :to :engine.compose, :kind :dependency}
+  {:from :application.overlay, :to :domain.config, :kind :dependency}
   {:from :main.uml-viewer, :to :typescript-language.source-typescript, :kind :dependency}
   {:from :application.document, :to :domain.ir, :kind :dependency}
   {:from :adapters.draw, :to :application.detail, :kind :dependency}

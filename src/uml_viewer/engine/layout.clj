@@ -370,9 +370,6 @@
           [0 []]
           groups)))))
 
-(defn- mutant-pair [c]
-  (select-keys c [:killed :survived :uncovered]))
-
 (defn- shift-class [c pkg origin-x origin-y rank-base]
   (layout-ports
     (assoc c
@@ -383,16 +380,13 @@
                        (get-in c [:rect :w])
                        (get-in c [:rect :h])))))
 
-(defn- rolled-crap [classes]
-  (let [worst (reduce config/worse-crap nil
-                      (map (fn [c] (or (:crap c) {})) classes))]
-    (when (:mu worst)
-      worst)))
+(defn- rolled-crap
+  "Function-weighted CRAP. Each class summary already covers that class."
+  [classes]
+  (config/pool-crap classes true))
 
 (defn- rolled-mutants [classes]
-  (let [worst (reduce config/worse-mutants nil (map mutant-pair classes))]
-    (when (or (:killed worst) (:survived worst))
-      worst)))
+  (config/pool-mutants classes))
 
 (defn- package-body [real origin-x origin-y]
   (or (geom/union
@@ -413,8 +407,7 @@
 (defn- with-rollup [pkg crap mut]
   (cond-> pkg
     crap (assoc :crap crap)
-    mut (assoc :killed (:killed mut) :survived (:survived mut)
-               :uncovered (:uncovered mut))))
+    mut (merge mut)))
 
 (defn- layout-package [pkg origin-x origin-y edges direction rank-base]
   (let [inner (mapv #(shift-class % pkg origin-x origin-y rank-base)
