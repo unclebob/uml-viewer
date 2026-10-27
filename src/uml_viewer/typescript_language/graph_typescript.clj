@@ -411,8 +411,14 @@
 (defn- resolve-project [file spec path->id]
   (when (and spec (str/starts-with? spec "."))
     (let [base (io/file (.getParentFile (.getCanonicalFile (io/file file))) spec)
+          base-path (.getPath base)
+          ;; NodeNext ESM style: "./config.js" names the compiled form of
+          ;; config.ts, so try the spec's .js suffix replaced by each ext.
+          swapped (when (re-find #"\.[cm]?js$" base-path)
+                    (map #(io/file (str/replace base-path #"\.[cm]?js$" %)) exts))
           candidates (concat [base]
-                             (map #(io/file (str (.getPath base) %)) exts)
+                             swapped
+                             (map #(io/file (str base-path %)) exts)
                              (map #(io/file base (str "index" %)) exts))]
       (some (fn [c]
               (when (.isFile c)
