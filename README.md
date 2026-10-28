@@ -191,9 +191,9 @@ namespace is a `:dependency`. `requiring-resolve` of a quoted var is a
 `:stereotype :interface`. `defrecord` or `deftype` of a protocol is
 `:implements`. External `:require`s and `:import`s become **foreign**
 classes. The overlay fills Clojure members from `.metrics/`. TypeScript,
-Rust, and Python are separate scanners (see
-[Language graphs](#language-graphs)): one class per module, with exported
-members as `:ops`. The overlay joins each snapshot by `:ns`, then by
+Rust, Python, and Kotlin are separate scanners (see
+[Language graphs](#language-graphs)): one class per module (per type
+for Kotlin), with exported members as `:ops`. The overlay joins each snapshot by `:ns`, then by
 the class id.
 
 ### Do not invent layers (components)
@@ -515,12 +515,47 @@ project name. `list[Animal]` is not. Public module-level functions and
 classes are `:ops`. A module whose public classes are only `Protocol` or
 `ABC` bases, with no public functions, is `:stereotype :interface`.
 
+**Kotlin** (`uml-viewer.kotlin-language.graph-kotlin`) emits one class
+per type, plus one class per file that has top-level functions. Each
+`:ns` is the class JaCoCo reports, so crapper's snapshots join exactly:
+
+| Code | `:ns` | id (prefix `demo`) |
+|------|-------|--------------------|
+| `class Shape` in package `demo` | `demo.Shape` | `:Shape` |
+| nested `class Inner` | `demo.Outer.Inner` | `:Outer.Inner` |
+| `companion object` | `demo.Shape.Companion` | `:Shape.Companion` |
+| top-level `fun area()` in `Geometry.kt` | `demo.GeometryKt` | `:GeometryKt` |
+
+The `package` line, not the directory, names the tree, so a nested type
+sits inside its outer type's box. `@file:JvmName("Geo")` renames the
+file class. A type declared inside a function or lambda is not drawn.
+It reads `.kt` files and skips test code by crapper's rule: a file
+under a directory named `test`, `tests`, `spec`, `specs` or `__tests__`,
+or under a source set such as `jvmTest`, `commonTest` or `testFixtures`
+(`[a-z][A-Za-z0-9]*Tests?` or `test[A-Z][A-Za-z0-9]*`). Only directory
+names count, so `TestBuilders.kt` and `AbstractFileSystemTest.kt` in a
+main source set are drawn. It also skips paths under `build`, `out`,
+`target`, and dot directories.
+`class A : B()` (a superclass call) is `:inheritance`; `class A : I` and
+`I by d` are `:implements`. An `import` of a project type, of a member
+of one (`demo.Color.RED`), or of a top-level function is a
+`:dependency` on that class. A same-package type, or a type in a
+project package imported with `*`, is a dependency where its name is
+used, as is a call to a same-package top-level function. A dependency
+belongs to the class whose body uses the name. An import with no use
+found goes to every top-level class in the file. Any other import is
+foreign (`java.util.UUID`, collapsed by a `:foreign` prefix such as
+`java`). `interface` is `:stereotype :interface`, `enum class`
+`:enumeration`, and `abstract` or `sealed` class `:abstract`. Functions
+declared directly in a class body (or at top level, for the file class)
+are `:ops` unless they are `private`, `internal`, or `protected`.
+
 `merge-scans` links a TypeScript `invoke("read_text")` to the Rust class
 that owns `#[tauri::command] fn read_text`, as a `:dependency`. Two
 project classes with the same id are an error. When a dependency and an
 `:implements` edge join the same pair, the IR keeps `:implements`.
 
-CRAP and mutation for TypeScript, Rust, and Python come from separate
+CRAP and mutation for TypeScript, Rust, Python, and Kotlin come from separate
 tools. The overlay joins a snapshot to the class whose `:ns` equals that
 namespace. Otherwise the class id owns that name (`bookwriter.model`
 owns `model`), a dotted child rolls up (`pdf` owns `pdf.Layout`), and
@@ -653,7 +688,11 @@ extractor must satisfy `LanguageSource`:
 **TypeScript** (`uml-viewer.typescript-language.source-typescript`),
 **Rust** (`uml-viewer.rust-language.source-rust`), and **Python**
 (`uml-viewer.python-language.source-python`) open `:file` and find the
-exported declaration, the `fn`, or the `def`. The class card passes
+exported declaration, the `fn`, or the `def`. **Kotlin**
+(`uml-viewer.kotlin-language.source-kotlin`) opens `:file` and finds
+`fun name` inside the body of the type that `:ns` names, or at top level
+for a file class, so `area` on `Square` and on `Circle` in one file each
+open at their own line. The class card passes
 `:lang` and `:file` from the class. A class with no `:lang` still uses
 the Clojure extractor that Main passes in. The protocol is the seam; do
 not special-case languages in the class card.

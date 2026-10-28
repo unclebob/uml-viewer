@@ -2,6 +2,7 @@
   (:require [uml-viewer.application.ir-generator :as ir-generator]
             [uml-viewer.clojure-language.graph-clojure]
             [uml-viewer.graph :as graph]
+            [uml-viewer.kotlin-language.graph-kotlin]
             [uml-viewer.python-language.graph-python]
             [uml-viewer.rust-language.graph-rust]
             [uml-viewer.typescript-language.graph-typescript])

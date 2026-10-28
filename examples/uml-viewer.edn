@@ -5,17 +5,20 @@
  :edge-kinds
  {[:main.uml-viewer :adapters.core] :association,
   [:main.ir-generator :typescript-language.graph-typescript] :association,
+  [:main :kotlin-language] :association,
   [:application.document :domain.hierarchy] :association,
   [:main.ir-generator :clojure-language.graph-clojure] :association,
   [:main.uml-viewer :rust-language.source-rust] :association,
   [:application.document :engine.compose] :association,
   [:main.uml-viewer :typescript-language.source-typescript] :association,
+  [:main.uml-viewer :kotlin-language.source-kotlin] :association,
   [:main :python-language] :association,
   [:engine.compose :engine.layout] :association,
   [:engine.compose :engine.route] :association,
   [:main.ir-generator :rust-language.graph-rust] :association,
   [:adapters.core :adapters.sketch] :association,
   [:main :application] :association,
+  [:main.ir-generator :kotlin-language.graph-kotlin] :association,
   [:main.uml-viewer :clojure-language.source-clojure] :association,
   [:main :clojure-language] :association,
   [:main.ir-generator :application.ir-generator] :association,
@@ -32,7 +35,8 @@
    :clojure-language
    :typescript-language
    :rust-language
-   :python-language]
+   :python-language
+   :kotlin-language]
   [:engine]
   [:application]
   [:adapters]
@@ -49,6 +53,7 @@
   :typescript-language
   :rust-language
   :python-language
+  :kotlin-language
   :domain],
  :omit [],
  :edges
@@ -80,10 +85,17 @@
   {:from :application.document, :to :domain.ir, :kind :dependency}
   {:from :adapters.draw, :to :application.detail, :kind :dependency}
   {:from :adapters.draw, :to :quil, :kind :dependency}
+  {:from :kotlin-language.parse-kotlin, :to :graph, :kind :dependency}
+  {:from :kotlin-language.graph-kotlin,
+   :to :kotlin-language.parse-kotlin,
+   :kind :dependency}
+  {:from :main.uml-viewer, :to :kotlin-language.source-kotlin, :kind :dependency}
   {:from :main.uml-viewer, :to :domain.log, :kind :dependency}
+  {:from :kotlin-language.source-kotlin, :to :graph, :kind :dependency}
   {:from :adapters.draw, :to :engine.curve, :kind :dependency}
   {:from :application.events, :to :application.detail, :kind :dependency}
   {:from :adapters.source-window, :to :source, :kind :dependency}
+  {:from :kotlin-language.source-kotlin, :to :source, :kind :dependency}
   {:from :domain.hierarchy, :to :domain.config, :kind :dependency}
   {:from :application.ir-generator, :to :domain.policy, :kind :dependency}
   {:from :application.events, :to :application.document, :kind :dependency}
@@ -91,8 +103,12 @@
   {:from :clojure-language.graph-clojure, :to :graph, :kind :implements}
   {:from :adapters.draw, :to :domain.geom, :kind :dependency}
   {:from :application.events, :to :domain.hierarchy, :kind :dependency}
+  {:from :kotlin-language.source-kotlin,
+   :to :kotlin-language.parse-kotlin,
+   :kind :dependency}
   {:from :main.ir-generator, :to :graph, :kind :dependency}
   {:from :engine.compose, :to :engine.layout, :kind :dependency}
+  {:from :kotlin-language.graph-kotlin, :to :graph, :kind :implements}
   {:from :engine.compose, :to :engine.route, :kind :dependency}
   {:from :application.events, :to :engine.layout, :kind :dependency}
   {:from :adapters.sketch, :to :quil, :kind :dependency}
@@ -113,6 +129,7 @@
   {:from :typescript-language.graph-typescript, :to :graph, :kind :implements}
   {:from :domain.hierarchy, :to :graph, :kind :dependency}
   {:from :engine.hit, :to :domain.geom, :kind :dependency}
+  {:from :main.ir-generator, :to :kotlin-language.graph-kotlin, :kind :dependency}
   {:from :adapters.draw, :to :domain.config, :kind :dependency}
   {:from :main.uml-viewer, :to :clojure-language.source-clojure, :kind :dependency}
   {:from :engine.curve, :to :domain.geom, :kind :dependency}
@@ -306,6 +323,27 @@
    :level 0,
    :lang :clojure,
    :id :graph}
+  {:stereotype nil,
+   :ns "uml-viewer.kotlin-language.graph-kotlin",
+   :name "GraphKotlin",
+   :file "src/uml_viewer/kotlin_language/graph_kotlin.clj",
+   :level 0,
+   :lang :clojure,
+   :id :kotlin-language.graph-kotlin}
+  {:stereotype nil,
+   :ns "uml-viewer.kotlin-language.parse-kotlin",
+   :name "ParseKotlin",
+   :file "src/uml_viewer/kotlin_language/parse_kotlin.clj",
+   :level 0,
+   :lang :clojure,
+   :id :kotlin-language.parse-kotlin}
+  {:stereotype nil,
+   :ns "uml-viewer.kotlin-language.source-kotlin",
+   :name "SourceKotlin",
+   :file "src/uml_viewer/kotlin_language/source_kotlin.clj",
+   :level 0,
+   :lang :clojure,
+   :id :kotlin-language.source-kotlin}
   {:stereotype nil,
    :ns "uml-viewer.main.ir-generator",
    :name "IrGenerator",
