@@ -203,4 +203,23 @@
       (should= 2 (:cc rust))
       (should= 2 (count (:ops rust)))
       (should-not (:crap main))
-      (should-not (some #(= "main" (:name %)) (:ops main))))))
+      (should-not (some #(= "main" (:name %)) (:ops main)))))
+
+  (it "joins a PHP snapshot named with backslashes onto the dotted class ns"
+    (let [doc {:hierarchical true
+               :prefix "App"
+               :classes [{:id :Foo :name "Foo" :ns "App.Foo" :lang :php}
+                         {:id :Foo.Bar :name "Bar" :ns "App.Foo.Bar" :lang :php}]
+               :edges []}
+          metrics {:crap {"App\\Foo\\Bar" [{:name "place" :namespace "App\\Foo\\Bar"
+                                              :complexity 3 :coverage 100.0 :crap 3.0}]}
+                   :mutate {"App\\Foo\\Bar" {:namespace "App\\Foo\\Bar"
+                                              :forms [{:id "defn/place" :killed 2 :survived 0
+                                                       :uncovered 0 :sites 2}]}}}
+          painted (overlay/apply-metrics doc metrics)
+          by-id (into {} (map (juxt :id identity) (:classes painted)))
+          bar (:Foo.Bar by-id)]
+      (should= 3 (:cc bar))
+      (should= 2 (:killed bar))
+      (should (some #(= "place" (:name %)) (:ops bar)))
+      (should-not (:cc (:Foo by-id))))))

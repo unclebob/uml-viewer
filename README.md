@@ -524,9 +524,9 @@ CRAP and mutation for TypeScript, Rust, and Python come from separate
 tools. The overlay joins a snapshot to the class whose `:ns` equals that
 namespace. Otherwise the class id owns that name (`bookwriter.model`
 owns `model`), a dotted child rolls up (`pdf` owns `pdf.Layout`), and
-the policy prefix belongs to the single undotted Rust class. `::` is
-read as `.`. A source file drawn inside its directory keeps its own
-CRAP and mutation scores. The directory box pools the functions under
+the policy prefix belongs to the single undotted Rust class. `::` and
+PHP's `\` are read as `.`. A source file drawn inside its directory keeps
+its own CRAP and mutation scores. The directory box pools the functions under
 it, one weight per function. A file with no snapshot stays red, and in
 that pool it counts as one red function per op, or one function when it
 lists none. A class with no CRAP or mutation data is red.
