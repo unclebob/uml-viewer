@@ -14,7 +14,7 @@
  {:score 1.0
   :language "clojure"
   :left {:file "src/uml_viewer/domain/config.clj", :start-line 63, :end-line 70}
-  :right {:file "src/uml_viewer/domain/config.clj", :start-line 83, :end-line 90}
+  :right {:file "src/uml_viewer/domain/config.clj", :start-line 88, :end-line 95}
   :left-nodes 56
   :right-nodes 56}
  {:score 1.0

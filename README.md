@@ -471,6 +471,12 @@ up.
 nested calls), `defprotocol`, `defrecord`, and `deftype`. It does not emit
 `:ops`. Project classes carry `:lang :clojure` and `:file`.
 
+**Haskell** (`uml-viewer.haskell-language.graph-haskell`) emits one class per
+`.hs` module, uses the declared module name as `:ns`, records top-level type
+signatures as `:ops`, and turns imports into dependencies. Project imports
+resolve to scanned modules; package and platform imports remain foreign.
+It skips `Spec.hs`, `Test.hs`, test trees, `dist-newstyle`, and `.stack-work`.
+
 **TypeScript** (`uml-viewer.typescript-language.graph-typescript`) emits
 one class per module file (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`).
 It skips `*.test.*`, `*.spec.*`, `*.d.ts`, and paths under `node_modules`,
@@ -649,6 +655,9 @@ extractor must satisfy `LanguageSource`:
 `src/...clj` (or `.cljc` / `.cljs`) and finds the top-level `(defn name …)` /
 `(defn- name …)` so the window can jump to that line. It does not read
 `:file`.
+
+**Haskell** (`uml-viewer.haskell-language.source-haskell`) opens `:file` and
+finds a top-level type signature or definition.
 
 **TypeScript** (`uml-viewer.typescript-language.source-typescript`),
 **Rust** (`uml-viewer.rust-language.source-rust`), and **Python**

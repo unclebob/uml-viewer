@@ -3,9 +3,11 @@
  :title "UML viewer",
  :prefix "uml-viewer",
  :edge-kinds
- {[:main.uml-viewer :adapters.core] :association,
+ {[:main :haskell-language] :association,
+  [:main.uml-viewer :adapters.core] :association,
   [:main.ir-generator :typescript-language.graph-typescript] :association,
   [:application.document :domain.hierarchy] :association,
+  [:main.uml-viewer :haskell-language.source-haskell] :association,
   [:main.ir-generator :clojure-language.graph-clojure] :association,
   [:main.uml-viewer :rust-language.source-rust] :association,
   [:application.document :engine.compose] :association,
@@ -13,6 +15,7 @@
   [:main :python-language] :association,
   [:engine.compose :engine.layout] :association,
   [:engine.compose :engine.route] :association,
+  [:main.ir-generator :haskell-language.graph-haskell] :association,
   [:main.ir-generator :rust-language.graph-rust] :association,
   [:adapters.core :adapters.sketch] :association,
   [:main :application] :association,
@@ -32,7 +35,8 @@
    :clojure-language
    :typescript-language
    :rust-language
-   :python-language]
+   :python-language
+   :haskell-language]
   [:engine]
   [:application]
   [:adapters]
@@ -49,6 +53,7 @@
   :typescript-language
   :rust-language
   :python-language
+  :haskell-language
   :domain],
  :omit [],
  :edges
@@ -66,6 +71,7 @@
   {:from :adapters.sketch, :to :adapters.draw, :kind :dependency}
   {:from :application.document, :to :domain.log, :kind :dependency}
   {:from :application.document, :to :engine.hit, :kind :dependency}
+  {:from :main.uml-viewer, :to :haskell-language.source-haskell, :kind :dependency}
   {:from :application.detail, :to :engine.layout, :kind :dependency}
   {:from :main.ir-generator, :to :clojure-language.graph-clojure, :kind :dependency}
   {:from :rust-language.graph-rust, :to :graph, :kind :implements}
@@ -82,6 +88,7 @@
   {:from :adapters.draw, :to :quil, :kind :dependency}
   {:from :main.uml-viewer, :to :domain.log, :kind :dependency}
   {:from :adapters.draw, :to :engine.curve, :kind :dependency}
+  {:from :haskell-language.source-haskell, :to :source, :kind :dependency}
   {:from :application.events, :to :application.detail, :kind :dependency}
   {:from :adapters.source-window, :to :source, :kind :dependency}
   {:from :domain.hierarchy, :to :domain.config, :kind :dependency}
@@ -96,7 +103,9 @@
   {:from :engine.compose, :to :engine.route, :kind :dependency}
   {:from :application.events, :to :engine.layout, :kind :dependency}
   {:from :adapters.sketch, :to :quil, :kind :dependency}
+  {:from :haskell-language.graph-haskell, :to :graph, :kind :implements}
   {:from :engine.compose, :to :domain.geom, :kind :dependency}
+  {:from :main.ir-generator, :to :haskell-language.graph-haskell, :kind :dependency}
   {:from :main.ir-generator, :to :rust-language.graph-rust, :kind :dependency}
   {:from :engine.route, :to :engine.layout, :kind :dependency}
   {:from :domain.hierarchy, :to :domain.policy, :kind :dependency}
@@ -306,6 +315,20 @@
    :level 0,
    :lang :clojure,
    :id :graph}
+  {:stereotype nil,
+   :ns "uml-viewer.haskell-language.graph-haskell",
+   :name "GraphHaskell",
+   :file "src/uml_viewer/haskell_language/graph_haskell.clj",
+   :level 0,
+   :lang :clojure,
+   :id :haskell-language.graph-haskell}
+  {:stereotype nil,
+   :ns "uml-viewer.haskell-language.source-haskell",
+   :name "SourceHaskell",
+   :file "src/uml_viewer/haskell_language/source_haskell.clj",
+   :level 0,
+   :lang :clojure,
+   :id :haskell-language.source-haskell}
   {:stereotype nil,
    :ns "uml-viewer.main.ir-generator",
    :name "IrGenerator",
