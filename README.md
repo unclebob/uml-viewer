@@ -193,7 +193,8 @@ namespace is a `:dependency`. `requiring-resolve` of a quoted var is a
 classes. The overlay fills Clojure members from `.metrics/`. TypeScript,
 Rust, and Python are separate scanners (see
 [Language graphs](#language-graphs)): one class per module, with exported
-members as `:ops`. The overlay joins each snapshot by `:ns`, then by
+members as `:ops`. Haskell is a separate scanner too, one class per module.
+The overlay joins each snapshot by `:ns`, then by
 the class id.
 
 ### Do not invent layers (components)
@@ -252,9 +253,9 @@ Right (the ns tree):
  :foreign [quil]
  :order [main adapters application engine source graph
          clojure-language typescript-language rust-language python-language
-         domain]
+         haskell-language domain]
  :levels [[domain source graph clojure-language typescript-language
-           rust-language python-language]
+           rust-language python-language haskell-language]
           [engine]
           [application]
           [adapters]
@@ -267,6 +268,9 @@ The policy `:prefix` is stripped from ids. A source `:prefix` is that
 tree's namespace root. `src/model.ts` becomes `bookwriter.model`
 (`:model`). `src-tauri/src/lib.rs` becomes `bookwriter.rust` (`:rust`).
 `main.rs` becomes `bookwriter.rust.main` (`:rust.main`).
+For Haskell, use one source entry per Cabal component and give each entry a
+distinct prefix. That disambiguates repeated module names such as `Main`;
+imports are still resolved across the merged scans.
 
 ```edn
 {:title "Bookwriter"
@@ -475,7 +479,13 @@ nested calls), `defprotocol`, `defrecord`, and `deftype`. It does not emit
 `.hs` module, uses the declared module name as `:ns`, records top-level type
 signatures as `:ops`, and turns imports into dependencies. Project imports
 resolve to scanned modules; package and platform imports remain foreign.
-It skips `Spec.hs`, `Test.hs`, test trees, `dist-newstyle`, and `.stack-work`.
+Operator signatures are included. Nested comments, `SOURCE`, safe, qualified,
+postpositive-qualified, and package-qualified imports are recognized. A file
+without a module header is `Main`. It skips `Spec.hs`, `Test.hs`, test trees,
+`dist-newstyle`, and `.stack-work`. When two build units contain the same
+module name, scan them as separate `:sources` with distinct prefixes. A
+duplicate inside one source root is reported instead of silently overwriting
+the class identity.
 
 **TypeScript** (`uml-viewer.typescript-language.graph-typescript`) emits
 one class per module file (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`).
@@ -526,7 +536,7 @@ that owns `#[tauri::command] fn read_text`, as a `:dependency`. Two
 project classes with the same id are an error. When a dependency and an
 `:implements` edge join the same pair, the IR keeps `:implements`.
 
-CRAP and mutation for TypeScript, Rust, and Python come from separate
+CRAP and mutation for TypeScript, Rust, Python, and Haskell come from separate
 tools. The overlay joins a snapshot to the class whose `:ns` equals that
 namespace. Otherwise the class id owns that name (`bookwriter.model`
 owns `model`), a dotted child rolls up (`pdf` owns `pdf.Layout`), and
