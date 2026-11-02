@@ -14,12 +14,12 @@
  {:score 1.0
   :language "clojure"
   :left {:file "src/uml_viewer/domain/config.clj", :start-line 63, :end-line 70}
-  :right {:file "src/uml_viewer/domain/config.clj", :start-line 83, :end-line 90}
+  :right {:file "src/uml_viewer/domain/config.clj", :start-line 88, :end-line 95}
   :left-nodes 56
   :right-nodes 56}
  {:score 1.0
   :language "clojure"
-  :left {:file "src/uml_viewer/graph.clj", :start-line 16, :end-line 20}
+  :left {:file "src/uml_viewer/graph.clj", :start-line 17, :end-line 21}
   :right {:file "src/uml_viewer/source.clj", :start-line 18, :end-line 22}
   :left-nodes 21
   :right-nodes 21}
@@ -29,4 +29,10 @@
   :right {:file "src/uml_viewer/typescript_language/graph_typescript.clj", :start-line 397, :end-line 406}
   :left-nodes 107
   :right-nodes 114}
+ {:score 0.816326530612
+  :language "clojure"
+  :left {:file "src/uml_viewer/domain/ir.clj", :start-line 31, :end-line 35}
+  :right {:file "src/uml_viewer/domain/ir.clj", :start-line 37, :end-line 43}
+  :left-nodes 84
+  :right-nodes 95}
 ]}

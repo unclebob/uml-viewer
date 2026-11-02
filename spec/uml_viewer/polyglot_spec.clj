@@ -33,7 +33,12 @@
     (should-throw
       (graph/merge-scans
         [{:classes [{:id :main :name "Main"}]}
-         {:classes [{:id :main :name "Other"}]}]))))
+         {:classes [{:id :main :name "Other"}]}])))
+
+  (it "keeps foreign classes that module resolution did not replace"
+    (let [foreign {:id :external :name "external" :foreign true}
+          merged (graph/merge-scans [{:classes [foreign] :edges []}])]
+      (should= [foreign] (:classes merged)))))
 
 (describe "policy sources"
   (it "scans each language and writes one document"

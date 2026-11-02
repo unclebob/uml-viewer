@@ -203,4 +203,18 @@
       (should= 2 (:cc rust))
       (should= 2 (count (:ops rust)))
       (should-not (:crap main))
-      (should-not (some #(= "main" (:name %)) (:ops main))))))
+      (should-not (some #(= "main" (:name %)) (:ops main)))))
+
+  (it "does not copy one snapshot onto classes with the same namespace"
+    (let [doc {:hierarchical true
+               :prefix "demo"
+               :classes [{:id :app.Main :name "Main" :ns "Main" :lang :haskell}
+                         {:id :tool.Main :name "Main" :ns "Main" :lang :haskell}]
+               :edges []}
+          metrics {:crap {"Main" [{:name "main" :namespace "Main"
+                                    :complexity 1 :coverage 100.0 :crap 1.0}]}
+                   :mutate {}}
+          painted (overlay/apply-metrics doc metrics)]
+      (doseq [c (:classes painted)]
+        (should-not (:crap c))
+        (should-not (some #(= "main" (:name %)) (:ops c)))))))

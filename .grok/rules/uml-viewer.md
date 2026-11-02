@@ -7,13 +7,16 @@ The diagram is already on screen.
 - Policy follows **namespace nesting**, not invented layers/components.
   Dots after the prefix are the tree. Do not add Domain/Engine-style
   packages. **Layer** and **component** mean the same thing.
-- TypeScript, Rust, and Python scanners sit beside `clojure-language`. This
+- TypeScript, Rust, Python, and Haskell scanners sit beside `clojure-language`. This
   policy stays `:lang :clojure`. Do not change Clojure scanning, source
   extraction, or the rule that missing CRAP and mutation are red.
   CRAP and mutation for other languages are separate tools. The overlay
   joins a snapshot by the class `:ns`, then by the class id. A class
   with no CRAP or mutation data is red. A non-Clojure project sets
   `:lang` or `:sources`.
+- A Haskell project uses `:lang :haskell`. For multiple Cabal components,
+  list each source root in `:sources` with a distinct `:prefix`; this keeps
+  repeated module names such as `Main` distinct while imports still resolve.
 - `:proposals` are named groupings that are **not** in the source. Preserve
   them when rewriting policy. Do not invent them on launch. The inspector
   lists them; **P** returns to the namespace tree. If instructed, add a

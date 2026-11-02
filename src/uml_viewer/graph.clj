@@ -9,7 +9,8 @@
      Returns `{:classes [{:id :name :ns :stereotype :foreign}]
                :edges [{:from :to :kind}]}`.
      External requires are classes with `:foreign true`.
-     A scan may also return `:commands` and `:invokes` for `merge-scans`."))
+     A scan may also return `:commands` and `:invokes`, or `:module-owners`
+     and `:module-imports`, for `merge-scans`."))
 
 (defonce ^:private languages (atom {}))
 
@@ -152,11 +153,50 @@
       (= (.charAt ^String source j) quote) (inc j)
       :else (recur (inc j) false))))
 
+(defn- merged-module-owners [scans]
+  (reduce (fn [owners scan]
+            (reduce-kv (fn [acc module id]
+                         (update acc module (fnil conj []) id))
+                       owners
+                       (or (:module-owners scan) {})))
+          {}
+          scans))
+
+(defn- resolve-module-edge [owners edge]
+  (let [ids (distinct (get owners (:module edge)))]
+    (-> edge
+        (assoc :to (if (= 1 (count ids)) (first ids) (:to edge)))
+        (dissoc :module))))
+
+(defn- edges-for-scan [owners scan]
+  (if (contains? scan :module-imports)
+    (map #(resolve-module-edge owners %) (:module-imports scan))
+    (:edges scan)))
+
+(defn- replaced-module-targets [owners scans]
+  (->> scans
+       (mapcat :module-imports)
+       (keep (fn [edge]
+               (let [resolved (resolve-module-edge owners edge)]
+                 (when (not= (:to edge) (:to resolved)) (:to edge)))))
+       set))
+
+(defn- prune-replaced-foreigns [classes edges replaced]
+  (let [referenced (set (mapcat (juxt :from :to) edges))]
+    (->> classes
+         (remove #(and (:foreign %)
+                       (replaced (:id %))
+                       (not (referenced (:id %)))))
+         vec)))
+
 (defn merge-scans
   "Combine language scans into one graph.
   Each scan is `{:classes :edges :commands :invokes}`.
   `:commands` maps a class id to command names. `:invokes` maps a class id
-  to names it calls. A call becomes a `:dependency` on the command's class."
+  to names it calls. A call becomes a `:dependency` on the command's class.
+  `:module-owners` maps source-language module names to class ids, while
+  `:module-imports` carries edges with `:module`; a unique owner across scans
+  replaces the import's local or foreign `:to`."
   [scans]
   (let [scans (vec scans)
         classes (mapcat :classes scans)
@@ -172,18 +212,23 @@
                             (or (first (remove :foreign cs))
                                 (first cs))))
                         (distinct (map :id classes)))
-          owners (into {}
-                       (for [scan scans
-                             [id cmds] (:commands scan)
-                             cmd cmds]
-                         [cmd id]))
+          module-owners (merged-module-owners scans)
+          replaced-targets (replaced-module-targets module-owners scans)
+          source-edges (mapcat #(edges-for-scan module-owners %) scans)
+          command-owners (into {}
+                               (for [scan scans
+                                     [id cmds] (:commands scan)
+                                     cmd cmds]
+                                 [cmd id]))
           linked (for [scan scans
                        [id names] (:invokes scan)
                        name names
-                       :let [to (get owners name)]
+                       :let [to (get command-owners name)]
                        :when (and to (not= to id))]
                    {:from id :to to :kind :dependency})
-          edges (->> (concat (mapcat :edges scans) linked)
+          edges (->> (concat source-edges linked)
+                     (remove #(= (:from %) (:to %)))
                      distinct
-                     vec)]
+                     vec)
+          classes (prune-replaced-foreigns classes edges replaced-targets)]
       {:classes classes :edges edges})))

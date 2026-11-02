@@ -193,8 +193,10 @@ namespace is a `:dependency`. `requiring-resolve` of a quoted var is a
 classes. The overlay fills Clojure members from `.metrics/`. TypeScript,
 Rust, and Python are separate scanners (see
 [Language graphs](#language-graphs)): one class per module, with exported
-members as `:ops`. The overlay joins each snapshot by `:ns`, then by
-the class id.
+members as `:ops`. Haskell is a separate scanner too, one class per module.
+The overlay joins each snapshot by `:ns`, then by the class id. If two
+different classes have the same `:ns`, the snapshot is left unassigned rather
+than copied onto both classes.
 
 ### Do not invent layers (components)
 
@@ -252,9 +254,9 @@ Right (the ns tree):
  :foreign [quil]
  :order [main adapters application engine source graph
          clojure-language typescript-language rust-language python-language
-         domain]
+         haskell-language domain]
  :levels [[domain source graph clojure-language typescript-language
-           rust-language python-language]
+           rust-language python-language haskell-language]
           [engine]
           [application]
           [adapters]
@@ -267,6 +269,10 @@ The policy `:prefix` is stripped from ids. A source `:prefix` is that
 tree's namespace root. `src/model.ts` becomes `bookwriter.model`
 (`:model`). `src-tauri/src/lib.rs` becomes `bookwriter.rust` (`:rust`).
 `main.rs` becomes `bookwriter.rust.main` (`:rust.main`).
+For Haskell, use one source entry per Cabal component and give each entry a
+distinct prefix. That disambiguates repeated module names such as `Main`;
+imports are still resolved across the merged scans. Metrics whose namespace is
+only `Main` stay unassigned when more than one component owns that module.
 
 ```edn
 {:title "Bookwriter"
@@ -471,6 +477,21 @@ up.
 nested calls), `defprotocol`, `defrecord`, and `deftype`. It does not emit
 `:ops`. Project classes carry `:lang :clojure` and `:file`.
 
+**Haskell** (`uml-viewer.haskell-language.graph-haskell`) emits one class per
+`.hs` module, uses the declared module name as `:ns`, records top-level type
+signatures as `:ops`, and turns imports into dependencies. Project imports
+resolve to scanned modules; package and platform imports remain foreign.
+Operator and grouped signatures are included at the module's layout column.
+Nested comments, `SOURCE`, safe, qualified, postpositive-qualified, and
+package-qualified imports are recognized. An explicit external package remains
+part of the foreign id (`"network" Network.Socket` becomes
+`:network.Network.Socket`); `"this"` resolves to the current project. A file
+without a module header is `Main`. It skips `Spec.hs`, `Test.hs`, test trees,
+`dist-newstyle`, and `.stack-work`. When two build units contain the same
+module name, scan them as separate `:sources` with distinct prefixes. A
+duplicate inside one source root is reported instead of silently overwriting
+the class identity.
+
 **TypeScript** (`uml-viewer.typescript-language.graph-typescript`) emits
 one class per module file (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`).
 It skips `*.test.*`, `*.spec.*`, `*.d.ts`, and paths under `node_modules`,
@@ -520,12 +541,13 @@ that owns `#[tauri::command] fn read_text`, as a `:dependency`. Two
 project classes with the same id are an error. When a dependency and an
 `:implements` edge join the same pair, the IR keeps `:implements`.
 
-CRAP and mutation for TypeScript, Rust, and Python come from separate
+CRAP and mutation for TypeScript, Rust, Python, and Haskell come from separate
 tools. The overlay joins a snapshot to the class whose `:ns` equals that
 namespace. Otherwise the class id owns that name (`bookwriter.model`
 owns `model`), a dotted child rolls up (`pdf` owns `pdf.Layout`), and
 the policy prefix belongs to the single undotted Rust class. `::` is
-read as `.`. A source file drawn inside its directory keeps its own
+read as `.`. An exact namespace shared by multiple class ids is ambiguous and
+stays unassigned. A source file drawn inside its directory keeps its own
 CRAP and mutation scores. The directory box pools the functions under
 it, one weight per function. A file with no snapshot stays red, and in
 that pool it counts as one red function per op, or one function when it
@@ -547,7 +569,8 @@ The overlay joins a snapshot to the class whose `:ns` equals that
 namespace. The generator writes `:ns` from the scanned ns. Hand-written
 IR must set `:ns` the same way. When no class has that `:ns`, the class
 id, a dotted child of that id, and the policy prefix on the single Rust
-crate root are the fallbacks.
+crate root are the fallbacks. When several different class ids have the same
+exact `:ns`, none receives that ambiguous snapshot.
 
 ```edn
 {:title "Lending library"
@@ -649,6 +672,9 @@ extractor must satisfy `LanguageSource`:
 `src/...clj` (or `.cljc` / `.cljs`) and finds the top-level `(defn name …)` /
 `(defn- name …)` so the window can jump to that line. It does not read
 `:file`.
+
+**Haskell** (`uml-viewer.haskell-language.source-haskell`) opens `:file` and
+finds a top-level type signature (including grouped operators) or definition.
 
 **TypeScript** (`uml-viewer.typescript-language.source-typescript`),
 **Rust** (`uml-viewer.rust-language.source-rust`), and **Python**

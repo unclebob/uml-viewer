@@ -144,22 +144,25 @@
   [classes prefix ns-name]
   (let [snap (normalize-ns ns-name)
         prefix (prefix-name prefix)
-        rust-root (sole-rust-root classes)]
-    (->> classes
-         (remove :foreign)
-         (keep (fn [c]
-                 (when-let [rank (claim-rank c prefix rust-root snap)]
-                   [rank c])))
-         (sort-by first)
-         first
-         second)))
+        rust-root (sole-rust-root classes)
+        ranked (->> classes
+                    (remove :foreign)
+                    (keep (fn [c]
+                            (when-let [rank (claim-rank c prefix rust-root snap)]
+                              [rank c])))
+                    (sort-by first))
+        best-rank (ffirst ranked)
+        best (take-while #(= best-rank (first %)) ranked)
+        ids (distinct (map (comp :id second) best))]
+    (when (= 1 (count ids))
+      (second (first best)))))
 
-(defn- owners-by-ns
-  "Class `:ns` to the snapshot namespaces that class displays."
+(defn- owners-by-id
+  "Class `:id` to snapshot namespaces. Ambiguous snapshots stay unassigned."
   [classes prefix snapshot-nss]
   (reduce (fn [acc snap]
             (if-let [c (snapshot-owner classes prefix snap)]
-              (let [k (class-namespace c)]
+              (let [k (:id c)]
                 (if k
                   (update acc k (fnil conj []) snap)
                   acc))
@@ -238,7 +241,7 @@
 
 (defn- paint-class [c metrics owners]
   (overlay-class c (:crap metrics) (:mutate metrics)
-                 (get owners (class-namespace c) [])))
+                 (get owners (:id c) [])))
 
 (defn- paint-packages [packages metrics owners]
   (mapv (fn [p]
@@ -260,7 +263,7 @@
   [doc metrics]
   (if (and (empty? (:crap metrics)) (empty? (:mutate metrics)))
     doc
-    (let [owners (owners-by-ns (doc-classes doc)
+    (let [owners (owners-by-id (doc-classes doc)
                                (:prefix doc)
                                (snapshot-names metrics))]
       (cond
