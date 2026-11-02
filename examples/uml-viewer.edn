@@ -80,6 +80,9 @@
   {:from :python-language.graph-python, :to :graph, :kind :implements}
   {:from :main.uml-viewer, :to :rust-language.source-rust, :kind :dependency}
   {:from :adapters.sketch, :to :application.events, :kind :dependency}
+  {:from :haskell-language.graph-haskell,
+   :to :haskell-language.syntax,
+   :kind :dependency}
   {:from :application.document, :to :engine.compose, :kind :dependency}
   {:from :application.overlay, :to :domain.config, :kind :dependency}
   {:from :main.uml-viewer, :to :typescript-language.source-typescript, :kind :dependency}
@@ -87,8 +90,11 @@
   {:from :adapters.draw, :to :application.detail, :kind :dependency}
   {:from :adapters.draw, :to :quil, :kind :dependency}
   {:from :main.uml-viewer, :to :domain.log, :kind :dependency}
+  {:from :haskell-language.source-haskell,
+   :to :haskell-language.syntax,
+   :kind :dependency}
   {:from :adapters.draw, :to :engine.curve, :kind :dependency}
-  {:from :haskell-language.source-haskell, :to :source, :kind :dependency}
+  {:from :haskell-language.source-haskell, :to :source, :kind :implements}
   {:from :application.events, :to :application.detail, :kind :dependency}
   {:from :adapters.source-window, :to :source, :kind :dependency}
   {:from :domain.hierarchy, :to :domain.config, :kind :dependency}
@@ -101,6 +107,7 @@
   {:from :main.ir-generator, :to :graph, :kind :dependency}
   {:from :engine.compose, :to :engine.layout, :kind :dependency}
   {:from :engine.compose, :to :engine.route, :kind :dependency}
+  {:from :haskell-language.syntax, :to :graph, :kind :dependency}
   {:from :application.events, :to :engine.layout, :kind :dependency}
   {:from :adapters.sketch, :to :quil, :kind :dependency}
   {:from :haskell-language.graph-haskell, :to :graph, :kind :implements}
@@ -329,6 +336,13 @@
    :level 0,
    :lang :clojure,
    :id :haskell-language.source-haskell}
+  {:stereotype nil,
+   :ns "uml-viewer.haskell-language.syntax",
+   :name "Syntax",
+   :file "src/uml_viewer/haskell_language/syntax.clj",
+   :level 0,
+   :lang :clojure,
+   :id :haskell-language.syntax}
   {:stereotype nil,
    :ns "uml-viewer.main.ir-generator",
    :name "IrGenerator",

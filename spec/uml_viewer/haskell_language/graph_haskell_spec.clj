@@ -24,7 +24,9 @@
                          "refresh, repair :: Int -> Int\n"
                          "refresh value = value\n"))]
       (should= "HBS2.Lease.Worker" (:module surface))
-      (should= ["Data.Map" "HBS2.Lease.Policy"] (:imports surface))
+      (should= [{:module "Data.Map"}
+                {:module "HBS2.Lease.Policy"}]
+               (:imports surface))
       (should= ["refresh" "repair"] (:ops surface))))
 
   (it "reads prepositive qualified package imports"
@@ -33,7 +35,9 @@
                          "module Package.Client where\n"
                          "import qualified \"containers\" Data.Map as Map\n"
                          "import \"network\" Network.Socket\n"))]
-      (should= ["Data.Map" "Network.Socket"] (:imports surface))))
+      (should= [{:package "containers" :module "Data.Map"}
+                {:package "network" :module "Network.Socket"}]
+               (:imports surface))))
 
   (it "ignores nested comments and keeps operator signatures"
     (let [surface (haskell/read-module
@@ -45,8 +49,41 @@
                          "import Real.Dependency\n"
                          "(-->) :: Int -> Int -> Bool\n"
                          "real :: Int\n"))]
-      (should= ["Real.Dependency"] (:imports surface))
+      (should= [{:module "Real.Dependency"}] (:imports surface))
       (should= ["(-->)" "real"] (:ops surface))))
+
+  (it "uses the module layout column for top-level signatures"
+    (let [surface (haskell/read-module
+                    (str "module Indented where\n"
+                         "  foo :: Int\n"
+                         "  foo = 1\n"
+                         "    where\n"
+                         "      hidden :: Int\n"
+                         "      hidden = 2\n"))]
+      (should= ["foo"] (:ops surface))))
+
+  (it "expands tabs when comparing layout columns"
+    (let [surface (haskell/read-module
+                    (str "module Tabbed where\n"
+                         "\tfoo :: Int\n"
+                         "\tfoo = local\n"
+                         "\t\tlocal :: Int\n"
+                         "\t\tlocal = 1\n"))]
+      (should= ["foo"] (:ops surface))))
+
+  (it "finds layout after standalone pragmas and preprocessor lines"
+    (let [surface (haskell/read-module
+                    (str "module Conditional\n"
+                         "  (ready) where\n"
+                         "  {-# INLINE ready #-}\n"
+                         "#if ENABLE_READY\n"
+                         "  ready :: Bool\n"
+                         "  ready = hidden\n"
+                         "    where\n"
+                         "      hidden :: Bool\n"
+                         "      hidden = True\n"
+                         "#endif\n"))]
+      (should= ["ready"] (:ops surface))))
 
   (it "does not treat comment markers in literals or apostrophes as comments"
     (let [surface (haskell/read-module
@@ -88,6 +125,32 @@
         (should (contains? edges [:Lease.Worker :Lease.Policy :dependency]))
         (should (contains? edges [:Lease.Worker :Data.Word :dependency]))
         (should-not (contains? classes :Lease.WorkerSpec))))))
+
+  (it "keeps a package-qualified import distinct from a local module"
+    (let [dir (temp-root)]
+      (spit-file dir "Shared/Api.hs"
+                 "module Shared.Api where\nlocal :: Int\nlocal = 1\n")
+      (spit-file dir "Client.hs"
+                 (str "{-# LANGUAGE PackageImports #-}\n"
+                      "module Client where\n"
+                      "import \"external-package\" Shared.Api\n"
+                      "client :: Int\nclient = 1\n"))
+      (let [result (graph/scan (graph/lookup :haskell) dir {:prefix "demo"})
+            classes (into {} (map (juxt :id identity) (:classes result)))
+            edges (set (map (juxt :from :to :kind) (:edges result)))]
+        (should (:foreign (classes :external-package.Shared.Api)))
+        (should (contains? edges
+                           [:Client :external-package.Shared.Api :dependency]))
+        (should-not (contains? edges [:Client :Shared.Api :dependency])))))
+
+  (it "resolves the special this package to the current project"
+    (let [dir (temp-root)]
+      (spit-file dir "Shared/Api.hs" "module Shared.Api where\n")
+      (spit-file dir "Client.hs"
+                 "module Client where\nimport \"this\" Shared.Api\n")
+      (let [result (graph/scan (graph/lookup :haskell) dir {:prefix "demo"})
+            edges (set (map (juxt :from :to :kind) (:edges result)))]
+        (should (contains? edges [:Client :Shared.Api :dependency])))))
 
 (describe "haskell split scans"
   (it "keeps project ids stable when source files are scanned separately"

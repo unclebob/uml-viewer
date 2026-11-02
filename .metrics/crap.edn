@@ -10,11 +10,12 @@
   {:name "mask-rust-step", :namespace "uml-viewer.rust-language.graph-rust", :complexity 7, :coverage 57.2917, :crap 10.8171}
   {:name "as-crap", :namespace "uml-viewer.domain.ir", :complexity 10, :coverage 97.0588, :crap 10.0025}
   {:name "mutation-ratio", :namespace "uml-viewer.domain.config", :complexity 10, :coverage 100.0, :crap 10.0}
-  {:name "visible-source", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 6, :coverage 52.9412, :crap 9.7517}
+  {:name "visible-source", :namespace "uml-viewer.haskell-language.syntax", :complexity 6, :coverage 52.9412, :crap 9.7517}
   {:name "statement-end", :namespace "uml-viewer.python-language.graph-python", :complexity 6, :coverage 53.1646, :crap 9.6985}
   {:name "mask-comments", :namespace "uml-viewer.python-language.graph-python", :complexity 6, :coverage 54.1176, :crap 9.4773}
   {:name "restamp-visible-edges", :namespace "uml-viewer.domain.hierarchy", :complexity 9, :coverage 88.6792, :crap 9.1175}
   {:name "detail-row-color", :namespace "uml-viewer.adapters.draw", :complexity 9, :coverage 92.8571, :crap 9.0295}
+  {:name "first-layout-token", :namespace "uml-viewer.haskell-language.syntax", :complexity 9, :coverage 95.4545, :crap 9.0076}
   {:name "overlay-op", :namespace "uml-viewer.application.overlay", :complexity 9, :coverage 95.5556, :crap 9.0071}
   {:name "claim-rank", :namespace "uml-viewer.application.overlay", :complexity 9, :coverage 96.0526, :crap 9.005}
   {:name "zoom-dir", :namespace "uml-viewer.application.events", :complexity 9, :coverage 97.8947, :crap 9.0008}
@@ -51,7 +52,7 @@
   {:name "export-value", :namespace "uml-viewer.typescript-language.graph-typescript", :complexity 7, :coverage 95.7447, :crap 7.0038}
   {:name "apply-declutter", :namespace "uml-viewer.domain.hierarchy", :complexity 7, :coverage 96.6667, :crap 7.0018}
   {:name "as-class", :namespace "uml-viewer.domain.ir", :complexity 7, :coverage 96.9925, :crap 7.0013}
-  {:name "nested-comment-end", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 7, :coverage 97.1429, :crap 7.0011}
+  {:name "nested-comment-end", :namespace "uml-viewer.haskell-language.syntax", :complexity 7, :coverage 97.1429, :crap 7.0011}
   {:name "apply-metrics", :namespace "uml-viewer.application.overlay", :complexity 7, :coverage 97.3684, :crap 7.0009}
   {:name "line-at", :namespace "uml-viewer.engine.layout", :complexity 7, :coverage 98.2143, :crap 7.0003}
   {:name "collapse", :namespace "uml-viewer.engine.route", :complexity 7, :coverage 98.3051, :crap 7.0002}
@@ -126,6 +127,7 @@
   {:name "exit-app!", :namespace "uml-viewer.adapters.sketch", :complexity 2, :coverage 7.6923, :crap 5.1461}
   {:name "regex-ident?", :namespace "uml-viewer.typescript-language.graph-typescript", :complexity 2, :coverage 7.6923, :crap 5.1461}
   {:name "resolve-which", :namespace "uml-viewer.domain.hierarchy", :complexity 5, :coverage 82.3529, :crap 5.1374}
+  {:name "import-id", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 5, :coverage 82.6087, :crap 5.1315}
   {:name "draw-edge-popup", :namespace "uml-viewer.adapters.draw", :complexity 5, :coverage 84.0517, :crap 5.1014}
   {:name "with-leaf-members", :namespace "uml-viewer.domain.hierarchy", :complexity 5, :coverage 84.4444, :crap 5.0941}
   {:name "quoted-symbol", :namespace "uml-viewer.clojure-language.graph-clojure", :complexity 5, :coverage 84.8485, :crap 5.087}
@@ -192,8 +194,9 @@
   {:name "rank-extent", :namespace "uml-viewer.engine.route", :complexity 5, :coverage 100.0, :crap 5.0}
   {:name "route", :namespace "uml-viewer.engine.route", :complexity 5, :coverage 99.6063, :crap 5.0}
   {:name "merge-scans", :namespace "uml-viewer.graph", :complexity 5, :coverage 98.8304, :crap 5.0}
-  {:name "line-comment?", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 5, :coverage 100.0, :crap 5.0}
-  {:name "token-end", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 5, :coverage 100.0, :crap 5.0}
+  {:name "definition-start", :namespace "uml-viewer.haskell-language.syntax", :complexity 5, :coverage 100.0, :crap 5.0}
+  {:name "line-comment?", :namespace "uml-viewer.haskell-language.syntax", :complexity 5, :coverage 100.0, :crap 5.0}
+  {:name "token-end", :namespace "uml-viewer.haskell-language.syntax", :complexity 5, :coverage 100.0, :crap 5.0}
   {:name "generation-plan", :namespace "uml-viewer.main.ir-generator", :complexity 5, :coverage 100.0, :crap 5.0}
   {:name "matches", :namespace "uml-viewer.rust-language.graph-rust", :complexity 5, :coverage 100.0, :crap 5.0}
   {:name "export-from", :namespace "uml-viewer.typescript-language.graph-typescript", :complexity 5, :coverage 100.0, :crap 5.0}
@@ -223,7 +226,7 @@
   {:name "merge-direction-edges", :namespace "uml-viewer.domain.hierarchy", :complexity 4, :coverage 91.4894, :crap 4.0099}
   {:name "extract-member", :namespace "uml-viewer.rust-language.source-rust", :complexity 4, :coverage 93.0233, :crap 4.0054}
   {:name "skip-ws-left", :namespace "uml-viewer.typescript-language.graph-typescript", :complexity 4, :coverage 94.1176, :crap 4.0033}
-  {:name "dash-run-end", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 4, :coverage 94.4444, :crap 4.0027}
+  {:name "dash-run-end", :namespace "uml-viewer.haskell-language.syntax", :complexity 4, :coverage 94.4444, :crap 4.0027}
   {:name "regex-flag-end", :namespace "uml-viewer.typescript-language.graph-typescript", :complexity 4, :coverage 94.4444, :crap 4.0027}
   {:name "delete-proposal", :namespace "uml-viewer.application.events", :complexity 4, :coverage 94.6429, :crap 4.0025}
   {:name "ns-join", :namespace "uml-viewer.graph", :complexity 4, :coverage 94.7368, :crap 4.0023}
@@ -236,7 +239,6 @@
   {:name "member-start", :namespace "uml-viewer.clojure-language.source-clojure", :complexity 4, :coverage 96.2963, :crap 4.0008}
   {:name "own-mutants", :namespace "uml-viewer.domain.hierarchy", :complexity 4, :coverage 96.2963, :crap 4.0008}
   {:name "take-command!", :namespace "uml-viewer.domain.mailbox", :complexity 4, :coverage 96.5517, :crap 4.0007}
-  {:name "import-id", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 4, :coverage 97.1429, :crap 4.0004}
   {:name "member-source", :namespace "uml-viewer.source", :complexity 4, :coverage 97.1429, :crap 4.0004}
   {:name "min-turn-dot", :namespace "uml-viewer.engine.route", :complexity 4, :coverage 97.4359, :crap 4.0003}
   {:name "via-rank", :namespace "uml-viewer.engine.route", :complexity 4, :coverage 97.351, :crap 4.0003}
@@ -319,7 +321,7 @@
   {:name "proposal-view", :namespace "uml-viewer.domain.hierarchy", :complexity 3, :coverage 92.5926, :crap 3.0037}
   {:name "face-limits", :namespace "uml-viewer.engine.route", :complexity 3, :coverage 93.1818, :crap 3.0029}
   {:name "read-edn", :namespace "uml-viewer.application.overlay", :complexity 3, :coverage 94.1176, :crap 3.0018}
-  {:name "identifier-char?", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 3, :coverage 94.1176, :crap 3.0018}
+  {:name "identifier-char?", :namespace "uml-viewer.haskell-language.syntax", :complexity 3, :coverage 94.1176, :crap 3.0018}
   {:name "exact-id", :namespace "uml-viewer.python-language.graph-python", :complexity 3, :coverage 94.7368, :crap 3.0013}
   {:name "crap-risk", :namespace "uml-viewer.domain.config", :complexity 3, :coverage 95.0, :crap 3.0011}
   {:name "named-map?", :namespace "uml-viewer.domain.policy", :complexity 3, :coverage 95.0, :crap 3.0011}
@@ -328,7 +330,7 @@
   {:name "bind-name", :namespace "uml-viewer.python-language.graph-python", :complexity 3, :coverage 96.0, :crap 3.0006}
   {:name "invoke-at", :namespace "uml-viewer.typescript-language.graph-typescript", :complexity 3, :coverage 96.0, :crap 3.0006}
   {:name "nse-ids", :namespace "uml-viewer.domain.policy", :complexity 3, :coverage 96.1538, :crap 3.0005}
-  {:name "char-literal-end", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 3, :coverage 96.2963, :crap 3.0005}
+  {:name "char-literal-end", :namespace "uml-viewer.haskell-language.syntax", :complexity 3, :coverage 96.2963, :crap 3.0005}
   {:name "merge-mutate", :namespace "uml-viewer.application.overlay", :complexity 3, :coverage 96.5517, :crap 3.0004}
   {:name "hide-classes", :namespace "uml-viewer.domain.hierarchy", :complexity 3, :coverage 96.4286, :crap 3.0004}
   {:name "label-part", :namespace "uml-viewer.domain.hierarchy", :complexity 3, :coverage 96.5517, :crap 3.0004}
@@ -336,7 +338,7 @@
   {:name "file-base", :namespace "uml-viewer.graph", :complexity 3, :coverage 96.4286, :crap 3.0004}
   {:name "binding-part", :namespace "uml-viewer.python-language.graph-python", :complexity 3, :coverage 96.4286, :crap 3.0004}
   {:name "escaped-string-char?", :namespace "uml-viewer.python-language.graph-python", :complexity 3, :coverage 96.4286, :crap 3.0004}
-  {:name "owners-by-ns", :namespace "uml-viewer.application.overlay", :complexity 3, :coverage 96.9697, :crap 3.0003}
+  {:name "owners-by-id", :namespace "uml-viewer.application.overlay", :complexity 3, :coverage 96.9697, :crap 3.0003}
   {:name "order-at", :namespace "uml-viewer.domain.hierarchy", :complexity 3, :coverage 96.6667, :crap 3.0003}
   {:name "foreign-root", :namespace "uml-viewer.rust-language.graph-rust", :complexity 3, :coverage 96.9697, :crap 3.0003}
   {:name "lib-crate-name", :namespace "uml-viewer.rust-language.graph-rust", :complexity 3, :coverage 96.7742, :crap 3.0003}
@@ -374,6 +376,7 @@
   {:name "drill", :namespace "uml-viewer.application.events", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "scroll-limits", :namespace "uml-viewer.application.events", :complexity 3, :coverage 98.2759, :crap 3.0}
   {:name "generate", :namespace "uml-viewer.application.ir-generator", :complexity 3, :coverage 100.0, :crap 3.0}
+  {:name "snapshot-owner", :namespace "uml-viewer.application.overlay", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "parse-file", :namespace "uml-viewer.clojure-language.graph-clojure", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "read-forms", :namespace "uml-viewer.clojure-language.graph-clojure", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "combine-groups", :namespace "uml-viewer.domain.config", :complexity 3, :coverage 98.913, :crap 3.0}
@@ -404,8 +407,9 @@
   {:name "with-rollup", :namespace "uml-viewer.engine.layout", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "channel", :namespace "uml-viewer.engine.route", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "through-intermediates", :namespace "uml-viewer.engine.route", :complexity 3, :coverage 100.0, :crap 3.0}
-  {:name "char-literal-start?", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "public-class", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 3, :coverage 100.0, :crap 3.0}
+  {:name "char-literal-start?", :namespace "uml-viewer.haskell-language.syntax", :complexity 3, :coverage 100.0, :crap 3.0}
+  {:name "signature-groups", :namespace "uml-viewer.haskell-language.syntax", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "bases-of", :namespace "uml-viewer.python-language.graph-python", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "import-at?", :namespace "uml-viewer.python-language.graph-python", :complexity 3, :coverage 100.0, :crap 3.0}
   {:name "interface-module?", :namespace "uml-viewer.python-language.graph-python", :complexity 3, :coverage 100.0, :crap 3.0}
@@ -426,20 +430,21 @@
   {:name "draw-regen-button", :namespace "uml-viewer.adapters.draw", :complexity 2, :coverage 70.0, :crap 2.108}
   {:name "class-open?", :namespace "uml-viewer.typescript-language.graph-typescript", :complexity 2, :coverage 72.7273, :crap 2.0811}
   {:name "port-w", :namespace "uml-viewer.engine.layout", :complexity 2, :coverage 73.6842, :crap 2.0729}
-  {:name "mask-span", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 2, :coverage 74.5098, :crap 2.0662}
+  {:name "mask-span", :namespace "uml-viewer.haskell-language.syntax", :complexity 2, :coverage 74.5098, :crap 2.0662}
   {:name "add-port", :namespace "uml-viewer.domain.hierarchy", :complexity 2, :coverage 75.0, :crap 2.0625}
+  {:name "project-import?", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 2, :coverage 75.0, :crap 2.0625}
   {:name "atomic-write!", :namespace "uml-viewer.domain.mailbox", :complexity 2, :coverage 77.5, :crap 2.0456}
   {:name "pkg-dummy", :namespace "uml-viewer.domain.hierarchy", :complexity 2, :coverage 80.0, :crap 2.032}
   {:name "mask-block-comment", :namespace "uml-viewer.graph", :complexity 2, :coverage 80.303, :crap 2.0306}
   {:name "skip-nested", :namespace "uml-viewer.python-language.graph-python", :complexity 2, :coverage 81.8182, :crap 2.024}
-  {:name "line-comment-end", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 2, :coverage 83.3333, :crap 2.0185}
+  {:name "line-comment-end", :namespace "uml-viewer.haskell-language.syntax", :complexity 2, :coverage 83.3333, :crap 2.0185}
   {:name "comment-mask-char", :namespace "uml-viewer.graph", :complexity 2, :coverage 85.7143, :crap 2.0117}
   {:name "persist-doc", :namespace "uml-viewer.application.events", :complexity 2, :coverage 86.9565, :crap 2.0089}
   {:name "conj-import", :namespace "uml-viewer.python-language.graph-python", :complexity 2, :coverage 87.5, :crap 2.0078}
   {:name "resolve-module-edge", :namespace "uml-viewer.graph", :complexity 2, :coverage 88.8889, :crap 2.0055}
   {:name "class-close?", :namespace "uml-viewer.typescript-language.graph-typescript", :complexity 2, :coverage 88.8889, :crap 2.0055}
   {:name "text-w", :namespace "uml-viewer.engine.layout", :complexity 2, :coverage 90.0, :crap 2.004}
-  {:name "symbol-char?", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 2, :coverage 90.0, :crap 2.004}
+  {:name "symbol-char?", :namespace "uml-viewer.haskell-language.syntax", :complexity 2, :coverage 90.0, :crap 2.004}
   {:name "declaration-line", :namespace "uml-viewer.source", :complexity 2, :coverage 90.0, :crap 2.004}
   {:name "expand-tabs", :namespace "uml-viewer.adapters.source-window", :complexity 2, :coverage 90.9091, :crap 2.003}
   {:name "leaf-pairs", :namespace "uml-viewer.engine.hit", :complexity 2, :coverage 90.9091, :crap 2.003}
@@ -540,7 +545,6 @@
   {:name "ns-from-source", :namespace "uml-viewer.application.overlay", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "ops-for-class", :namespace "uml-viewer.application.overlay", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "pct->ratio", :namespace "uml-viewer.application.overlay", :complexity 2, :coverage 100.0, :crap 2.0}
-  {:name "snapshot-owner", :namespace "uml-viewer.application.overlay", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "aliases-of", :namespace "uml-viewer.clojure-language.graph-clojure", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "protocol-nses", :namespace "uml-viewer.clojure-language.graph-clojure", :complexity 2, :coverage 97.8723, :crap 2.0}
   {:name "requiring-resolve-op?", :namespace "uml-viewer.clojure-language.graph-clojure", :complexity 2, :coverage 100.0, :crap 2.0}
@@ -646,11 +650,18 @@
   {:name "next-char", :namespace "uml-viewer.graph", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "prune-replaced-foreigns", :namespace "uml-viewer.graph", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "replaced-module-targets", :namespace "uml-viewer.graph", :complexity 2, :coverage 100.0, :crap 2.0}
-  {:name "block-comment-start?", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "excluded-path?", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "module-id", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "module-meta", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "reject-duplicate-modules", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 2, :coverage 100.0, :crap 2.0}
+  {:name "extract-member", :namespace "uml-viewer.haskell-language.source-haskell", :complexity 2, :coverage 100.0, :crap 2.0}
+  {:name "member-start", :namespace "uml-viewer.haskell-language.source-haskell", :complexity 2, :coverage 100.0, :crap 2.0}
+  {:name "block-comment-start?", :namespace "uml-viewer.haskell-language.syntax", :complexity 2, :coverage 100.0, :crap 2.0}
+  {:name "column-at", :namespace "uml-viewer.haskell-language.syntax", :complexity 2, :coverage 100.0, :crap 2.0}
+  {:name "layout-column", :namespace "uml-viewer.haskell-language.syntax", :complexity 2, :coverage 100.0, :crap 2.0}
+  {:name "module-body-start", :namespace "uml-viewer.haskell-language.syntax", :complexity 2, :coverage 100.0, :crap 2.0}
+  {:name "read-module", :namespace "uml-viewer.haskell-language.syntax", :complexity 2, :coverage 100.0, :crap 2.0}
+  {:name "signature-start", :namespace "uml-viewer.haskell-language.syntax", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "bind-child", :namespace "uml-viewer.python-language.graph-python", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "brace-advance", :namespace "uml-viewer.python-language.graph-python", :complexity 2, :coverage 100.0, :crap 2.0}
   {:name "closer-advance", :namespace "uml-viewer.python-language.graph-python", :complexity 2, :coverage 100.0, :crap 2.0}
@@ -901,9 +912,11 @@
   {:name "lookup", :namespace "uml-viewer.graph", :complexity 1, :coverage 100.0, :crap 1.0}
   {:name "member-edges", :namespace "uml-viewer.graph", :complexity 1, :coverage 100.0, :crap 1.0}
   {:name "register!", :namespace "uml-viewer.graph", :complexity 1, :coverage 100.0, :crap 1.0}
-  {:name "copy-span", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 1, :coverage 100.0, :crap 1.0}
   {:name "read-module", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 1, :coverage 100.0, :crap 1.0}
   {:name "source-files", :namespace "uml-viewer.haskell-language.graph-haskell", :complexity 1, :coverage 100.0, :crap 1.0}
+  {:name "copy-span", :namespace "uml-viewer.haskell-language.syntax", :complexity 1, :coverage 100.0, :crap 1.0}
+  {:name "next-tab-stop", :namespace "uml-viewer.haskell-language.syntax", :complexity 1, :coverage 100.0, :crap 1.0}
+  {:name "signature-entries-in", :namespace "uml-viewer.haskell-language.syntax", :complexity 1, :coverage 100.0, :crap 1.0}
   {:name "as-edges", :namespace "uml-viewer.python-language.graph-python", :complexity 1, :coverage 100.0, :crap 1.0}
   {:name "file-meta", :namespace "uml-viewer.python-language.graph-python", :complexity 1, :coverage 100.0, :crap 1.0}
   {:name "flatten-stmt", :namespace "uml-viewer.python-language.graph-python", :complexity 1, :coverage 100.0, :crap 1.0}

@@ -2,7 +2,8 @@
   "Haskell LanguageGraph: one class per module and import dependencies."
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
-            [uml-viewer.graph :as graph]))
+            [uml-viewer.graph :as graph]
+            [uml-viewer.haskell-language.syntax :as syntax]))
 
 (defn- excluded-path? [file]
   (let [path (str/replace (.getPath ^java.io.File file) #"\\" "/")
@@ -17,116 +18,10 @@
        (remove excluded-path?)
        (sort-by #(.getPath ^java.io.File %))))
 
-(def ^:private symbol-chars
-  (set "!#$%&*+./<=>?@\\^|~-:"))
-
-(defn- symbol-char? [c]
-  (boolean (and c (symbol-chars c))))
-
-(defn- dash-run-end [source i]
-  (loop [j i]
-    (if (and (< j (count source)) (= \- (.charAt ^String source j)))
-      (recur (inc j))
-      j)))
-
-(defn- line-comment? [source i]
-  (when (and (.startsWith ^String source "--" (int i))
-             (not (symbol-char? (when (pos? i) (.charAt ^String source (dec i))))))
-    (let [end (dash-run-end source i)]
-      (not (symbol-char? (when (< end (count source))
-                           (.charAt ^String source end)))))))
-
-(defn- nested-comment-end [source i]
-  (let [n (count source)]
-    (loop [j (+ i 2) depth 1]
-      (cond
-        (>= j n) n
-        (.startsWith ^String source "{-" (int j)) (recur (+ j 2) (inc depth))
-        (.startsWith ^String source "-}" (int j))
-        (if (= depth 1) (+ j 2) (recur (+ j 2) (dec depth)))
-        :else (recur (inc j) depth)))))
-
-(defn- line-comment-end [source i]
-  (or (str/index-of source \newline i) (count source)))
-
-(defn- mask-span [sb source start end]
-  (doseq [i (range start end)]
-    (.append ^StringBuilder sb
-             (if (= \newline (.charAt ^String source i)) \newline \space))))
-
-(defn- identifier-char? [c]
-  (boolean (and c (or (Character/isLetterOrDigit ^Character c) (= \_ c)))))
-
-(defn- char-literal-start? [source i]
-  (and (= \' (.charAt ^String source i))
-       (not (identifier-char? (when (pos? i)
-                                (.charAt ^String source (dec i)))))))
-
-(defn- char-literal-end [source i n]
-  (let [end (graph/scan-quoted source i \' n)
-        newline (str/index-of source \newline i)]
-    (when (or (nil? newline) (<= end newline)) end)))
-
-(defn- block-comment-start? [source i]
-  (and (.startsWith ^String source "{-" (int i))
-       (not (.startsWith ^String source "{-#" (int i)))))
-
-(defn- token-end [source i n]
-  (cond
-    (= \" (.charAt ^String source i)) (graph/scan-quoted source i \" n)
-    (char-literal-start? source i) (or (char-literal-end source i n) (inc i))
-    :else (inc i)))
-
-(defn- copy-span [sb source start end]
-  (.append ^StringBuilder sb (subs source start end)))
-
-(defn- visible-source
-  "Mask comments while preserving strings, characters, pragmas, and newlines."
-  [source]
-  (let [n (count source)
-        sb (StringBuilder. n)]
-    (loop [i 0]
-      (if (>= i n)
-        (str sb)
-        (cond
-          (block-comment-start? source i)
-          (let [end (nested-comment-end source i)]
-            (mask-span sb source i end)
-            (recur end))
-
-          (line-comment? source i)
-          (let [end (line-comment-end source i)]
-            (mask-span sb source i end)
-            (recur end))
-
-          :else
-          (let [end (token-end source i n)]
-            (copy-span sb source i end)
-            (recur end)))))))
-
-(def ^:private name-pattern
-  "(?:[a-z_][\\w']*|\\([-!#$%&*+./<=>?@\\\\^|~:]+\\))")
-
-(def ^:private signature-pattern
-  (re-pattern (str "(?m)^(" name-pattern
-                   "(?:\\s*,\\s*" name-pattern ")*)\\s*::")))
-
 (defn read-module
   "Read the module name, imported modules, and top-level signatures."
   [source]
-  (let [text (visible-source source)
-        module (second (re-find #"(?m)^\s*module\s+([A-Z][\w.']*)\b" text))
-        imports (->> (re-seq
-                       #"(?m)^\s*import\s+(?:\{-#\s*SOURCE\s*#-\}\s*)?(?:safe\s+)?(?:qualified\s+)?(?:\"[^\"]+\"\s+)?([A-Z][\w.']*)\b"
-                       text)
-                     (map second)
-                     distinct
-                     vec)
-        ops (->> (re-seq signature-pattern text)
-                 (mapcat (fn [[_ names]] (map str/trim (str/split names #","))))
-                 distinct
-                 vec)]
-    {:module module :imports imports :ops ops}))
+  (syntax/read-module source))
 
 (defn- relative-name [module prefix]
   (cond
@@ -166,12 +61,17 @@
     (seq (:ops module)) (update :ops #(mapv (fn [name] {:name name}) %))
     (empty? (:ops module)) (dissoc :ops)))
 
-(defn- import-id [imported project prefix]
-  (or (get project imported)
-      (when (or (= imported prefix)
-                (str/starts-with? imported (str prefix ".")))
-        (graph/id-of imported prefix))
-      (keyword imported)))
+(defn- project-import? [{:keys [package]}]
+  (or (nil? package) (= "this" package)))
+
+(defn- import-id [{:keys [module package] :as imported} project prefix]
+  (if (project-import? imported)
+    (or (get project module)
+        (when (or (= module prefix)
+                  (str/starts-with? module (str prefix ".")))
+          (graph/id-of module prefix))
+        (keyword module))
+    (keyword (str package "." module))))
 
 (defrecord HaskellGraph []
   graph/LanguageGraph
@@ -184,10 +84,10 @@
           project (into {} (map (juxt :module :id) modules))
           imports (for [module modules
                         imported (:imports module)]
-                    {:from (:id module)
-                     :to (import-id imported project prefix)
-                     :module imported
-                     :kind :dependency})
+                    (cond-> {:from (:id module)
+                             :to (import-id imported project prefix)
+                             :kind :dependency}
+                      (project-import? imported) (assoc :module (:module imported))))
           project-ids (set (vals project))
           foreigns (->> imports
                         (map :to)
