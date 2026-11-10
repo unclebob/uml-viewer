@@ -17,7 +17,7 @@
     (when (.find m from) (.start m))))
 
 (defn- interface-spec [text recv q]
-  (when-let [at (find-at text (format "(?m)^type\\s+%s\\s+interface\\b" recv) 0)]
+  (when-let [at (find-at text (format "(?m)^type\\s+%s(?:\\[[^\\]]*\\])?\\s+interface\\b" recv) 0)]
     (find-at text (format "(?m)^\\s+%s\\s*\\(" q) at)))
 
 (defn member-start
@@ -36,7 +36,7 @@
 
 (defn- package-files [file]
   (let [f (io/file file)
-        siblings (->> (.listFiles (.getParentFile f))
+        siblings (->> (.listFiles (.getParentFile (.getAbsoluteFile f)))
                       (filter #(str/ends-with? (.getName %) ".go"))
                       (remove #(str/ends-with? (.getName %) "_test.go"))
                       (sort-by #(.getName %)))]

@@ -44,6 +44,23 @@
       (should= 9 (:line (find-member dir "example.com/shop/cart" "New")))
       (should= 9 (:line (find-member dir "gopkg.in/cart.v3" "New")))))
 
+  (it "finds a method of a generic interface"
+    (let [dir (package-dir)]
+      (spit (io/file dir "box.go")
+            "package cart\n\ntype Box[T any] interface {\n\tPut(v T)\n}\n")
+      (should= 4 (:line (source/member-source {:lang :go
+                                                :ns "example.com/shop/cart.Box"
+                                                :file (.getPath (io/file dir "box.go"))
+                                                :name "Put"})))))
+
+  (it "opens a root-package file named relative to the working directory"
+    (let [file (io/file (str "uml-go-root-" (System/nanoTime) ".go"))]
+      (try
+        (spit file "package root\n\nfunc Run() {}\n")
+        (should= 3 (:line (source/member-source {:lang :go :ns "example.com/root"
+                                                  :file (.getPath file) :name "Run"})))
+        (finally (.delete file)))))
+
   (it "finds a type declaration"
     (should= 7 (:line (find-member (package-dir) "example.com/shop/cart" "Cart"))))
 
