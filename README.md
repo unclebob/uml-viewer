@@ -193,8 +193,8 @@ namespace is a `:dependency`. `requiring-resolve` of a quoted var is a
 classes. The overlay fills Clojure members from `.metrics/`. TypeScript,
 Rust, and Python are separate scanners (see
 [Language graphs](#language-graphs)): one class per module, with exported
-members as `:ops`. The overlay joins each snapshot by `:ns`, then by
-the class id.
+members as `:ops`. Go is one class per package and one per package-level
+type. The overlay joins each snapshot by `:ns`, then by the class id.
 
 ### Do not invent layers (components)
 
@@ -252,9 +252,9 @@ Right (the ns tree):
  :foreign [quil]
  :order [main adapters application engine source graph
          clojure-language typescript-language rust-language python-language
-         domain]
+         go-language domain]
  :levels [[domain source graph clojure-language typescript-language
-           rust-language python-language]
+           rust-language python-language go-language]
           [engine]
           [application]
           [adapters]
@@ -274,6 +274,34 @@ tree's namespace root. `src/model.ts` becomes `bookwriter.model`
  :sources [{:lang :typescript :root "src"}
            {:lang :rust :root "src-tauri/src" :prefix "bookwriter.rust"}]
  :foreign [at.tauri-apps markdown-it highlight.js node tauri serde std]
+ :hierarchical true}
+```
+
+A Go project sets `:lang :go` and points `:src` at the directory that
+holds `go.mod` (or any directory under it). Package directories are the
+tree: `internal/crap` becomes `:internal.crap`, and its type `Scorer`
+becomes `:internal.crap.Scorer`. The root package is the policy
+`:prefix`. Foreign imports keep their import path with `/` read as `.`,
+so `:foreign` lists `fmt`, `net.http`, or `github.com.spf13.pflag`.
+
+```edn
+{:title "crap4go"
+ :prefix "crap4go"
+ :lang :go
+ :src "."
+ :foreign [fmt os]
+ :hierarchical true
+ :out "crap4go.edn"}
+```
+
+A Go tree can sit beside another language under `:sources`, as in a
+repo with Go under the root and Babashka scripts under `bb`:
+
+```edn
+{:title "Acceptance pipeline"
+ :prefix "aps"
+ :sources [{:lang :go :root "." :prefix "aps.go"}
+           {:lang :clojure :root "bb/src"}]
  :hierarchical true}
 ```
 
@@ -515,13 +543,35 @@ project name. `list[Animal]` is not. Public module-level functions and
 classes are `:ops`. A module whose public classes are only `Protocol` or
 `ABC` bases, with no public functions, is `:stereotype :interface`.
 
+**Go** (`uml-viewer.go-language.graph-go`, reading each file with
+`uml-viewer.go-language.read-go`) emits one class per package directory
+and one per package-level type. The package's `:ns` is its import path
+from the nearest `go.mod` (`github.com/unclebob/crap4go/internal/crap`),
+or the `package` name when there is no `go.mod`. A type's `:ns` is
+`import/path.Type`. Those are the namespaces crapper and mutator write,
+so `.metrics` snapshots join by `:ns`. It skips `*_test.go`, files with
+`//go:build ignore`, and directories named `vendor`, `testdata`, or
+`node_modules`, or starting with `.` or `_`. Each `import` is a package
+`:dependency`; an import outside the project is foreign. A type depends
+on the project types and packages that its declaration and its methods
+name (`store.Item`, or a bare `Item` from its own package). A type whose
+method set, including methods promoted from embedded project types,
+covers every method of a project interface `:implements` it. Methods
+match by name and by parameter and result counts, not by types. An
+interface that embeds an interface outside the project, or lists type
+constraints (`~int | ~float64`), is not matched. An interface that
+embeds a project interface is `:inheritance`. Interfaces are
+`:stereotype :interface`. Exported package functions, exported methods,
+and interface methods are `:ops`.
+
 `merge-scans` links a TypeScript `invoke("read_text")` to the Rust class
 that owns `#[tauri::command] fn read_text`, as a `:dependency`. Two
 project classes with the same id are an error. When a dependency and an
 `:implements` edge join the same pair, the IR keeps `:implements`.
 
-CRAP and mutation for TypeScript, Rust, and Python come from separate
-tools. The overlay joins a snapshot to the class whose `:ns` equals that
+CRAP and mutation for TypeScript, Rust, Python, and Go come from
+separate tools ([crapper](https://github.com/unclebob/crapper) and
+[mutator](https://github.com/unclebob/mutator)). The overlay joins a snapshot to the class whose `:ns` equals that
 namespace. Otherwise the class id owns that name (`bookwriter.model`
 owns `model`), a dotted child rolls up (`pdf` owns `pdf.Layout`), and
 the policy prefix belongs to the single undotted Rust class. `::` is
@@ -653,7 +703,12 @@ extractor must satisfy `LanguageSource`:
 **TypeScript** (`uml-viewer.typescript-language.source-typescript`),
 **Rust** (`uml-viewer.rust-language.source-rust`), and **Python**
 (`uml-viewer.python-language.source-python`) open `:file` and find the
-exported declaration, the `fn`, or the `def`. The class card passes
+exported declaration, the `fn`, or the `def`. **Go**
+(`uml-viewer.go-language.source-go`) searches every non-test `.go` file
+in the directory of `:file`, because a Go package spans files. On a type
+class it prefers the method with that receiver (`func (c *Cart) Total`),
+then the method in that interface, then a `func`, a `type`, or any
+method of that name. The class card passes
 `:lang` and `:file` from the class. A class with no `:lang` still uses
 the Clojure extractor that Main passes in. The protocol is the seam; do
 not special-case languages in the class card.
