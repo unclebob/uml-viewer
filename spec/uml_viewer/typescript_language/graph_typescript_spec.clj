@@ -103,6 +103,16 @@
         (should (:foreign (by-id :markdown-it)))
         (should (contains? edges [:preview :markdown-it :dependency])))))
 
+  (it "resolves a NodeNext .js import to its .ts source"
+    (let [dir (temp-root)]
+      (spit-file dir "src/model.ts" "export function wordCount(body: string): number { return 0; }\n")
+      (spit-file dir "src/book.ts"
+                 (str "import { wordCount } from \"./model.js\";\n"
+                      "export function loadBook(): number { return wordCount(\"\"); }\n"))
+      (let [g (graph/scan (graph/lookup :typescript) (io/file dir "src") {:prefix "bookwriter"})
+            edges (set (map (juxt :from :to :kind) (:edges g)))]
+        (should (contains? edges [:book :model :dependency])))))
+
   (it "nests a file under its directory"
     (let [dir (temp-root)]
       (spit-file dir "src/editor/view.ts" "export function show(): void {}\n")
