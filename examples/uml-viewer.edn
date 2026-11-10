@@ -144,6 +144,8 @@
   {:from :go-language.graph-go, :to :graph, :kind :implements}
   {:from :application.document, :to :domain.mailbox, :kind :dependency}
   {:from :engine.route, :to :domain.geom, :kind :dependency}
+  {:from :go-language.graph-go, :to :go-language.read-go, :kind :dependency}
+  {:from :go-language.read-go, :to :graph, :kind :dependency}
   {:from :adapters.source-window, :to :javax.swing, :kind :dependency}
   {:from :adapters.sketch, :to :javax.swing, :kind :dependency}],
  :classes
@@ -315,6 +317,13 @@
    :level 0,
    :lang :clojure,
    :id :go-language.graph-go}
+  {:stereotype nil,
+   :ns "uml-viewer.go-language.read-go",
+   :name "ReadGo",
+   :file "src/uml_viewer/go_language/read_go.clj",
+   :level 0,
+   :lang :clojure,
+   :id :go-language.read-go}
   {:stereotype nil,
    :ns "uml-viewer.go-language.source-go",
    :name "SourceGo",
