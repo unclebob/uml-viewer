@@ -1,6 +1,7 @@
 (ns uml-viewer.main.ir-generator
   (:require [uml-viewer.application.ir-generator :as ir-generator]
             [uml-viewer.clojure-language.graph-clojure]
+            [uml-viewer.go-language.graph-go]
             [uml-viewer.graph :as graph]
             [uml-viewer.python-language.graph-python]
             [uml-viewer.rust-language.graph-rust]

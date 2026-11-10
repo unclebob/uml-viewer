@@ -3,7 +3,9 @@
             [clojure.string :as str]
             [speclj.core :refer :all]
             [uml-viewer.application.ir-generator :as ir-generator]
+            [uml-viewer.application.overlay :as overlay]
             [uml-viewer.graph :as graph]
+            [uml-viewer.main.ir-generator]
             [uml-viewer.rust-language.graph-rust]
             [uml-viewer.typescript-language.graph-typescript]))
 
@@ -74,6 +76,40 @@
               round (read-string (slurp written))]
           (should= "Bookwriter" (:title round))
           (should (some #(= :tauriFs (:id %)) (:classes round))))))))
+
+(describe "go policy"
+  (it "scans a Go source tree and joins crapper's Go names onto its classes"
+    (let [dir (io/file (System/getProperty "java.io.tmpdir")
+                       (str "uml-go-poly-" (System/nanoTime)))]
+      (spit-file dir "go.mod" "module example.com/shop\n")
+      (spit-file dir "cart/cart.go"
+                 (str "package cart\n\nimport \"fmt\"\n\n"
+                      "type Cart struct{}\n\n"
+                      "func (c *Cart) Total() int { return 0 }\n"
+                      "func New() *Cart { fmt.Println(); return &Cart{} }\n"))
+      (let [doc (ir-generator/document
+                  nil
+                  {:title "Shop"
+                   :prefix "shop"
+                   :hierarchical true
+                   :foreign [:fmt]
+                   :sources [{:lang :go :root (str dir)}]})
+            painted (overlay/apply-metrics
+                      doc
+                      {:crap {"example.com/shop/cart"
+                              [{:name "New" :complexity 1 :coverage 100.0 :crap 1.0}]
+                              "example.com/shop/cart.Cart"
+                              [{:name "Total" :complexity 2 :coverage 50.0 :crap 2.5}]}
+                       :mutate {"example.com/shop/cart.Cart"
+                                {:forms [{:id "defn/Total" :killed 3 :survived 1
+                                          :uncovered 0 :sites 4}]}}})
+            by-id (into {} (map (juxt :id identity) (:classes painted)))
+            edges (set (map (juxt :from :to :kind) (:edges painted)))]
+        (should (contains? edges [:cart :fmt :dependency]))
+        (should= :go (:lang (by-id :cart.Cart)))
+        (should= 2.5 (get-in by-id [:cart.Cart :crap :mu]))
+        (should= 3 (:killed (by-id :cart.Cart)))
+        (should= 1.0 (get-in by-id [:cart :crap :mu]))))))
 
 (def ^:private bookwriter
   (let [candidates [(io/file "/Users/unclebob/projects/bookwriter")
