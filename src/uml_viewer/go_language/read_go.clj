@@ -118,11 +118,11 @@
             (recur (inc (or (matching code at) at)))
             at))))))
 
-(defn- result-count [results]
+(defn- result-count
+  "`(a, b error)` has two results; a bare `error` has one; none has zero."
+  [results]
   (let [r (str/trim results)]
-    (cond (str/blank? r) 0
-          (str/starts-with? r "(") (item-count (inside r 0))
-          :else 1)))
+    (item-count (if (str/starts-with? r "(") (inside r 0) r))))
 
 (defn- signature
   "Name, parameter count, and result count of `name(params) results` at `at`."

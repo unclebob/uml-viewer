@@ -57,6 +57,15 @@
       (should= [["Stack" "Push" 1 0]] (map (juxt :receiver :name :params :results) (:methods surface)))
       (should= [["Map" 2 1]] (map (juxt :name :params :results) (:funcs surface)))))
 
+  (it "counts a result that is an interface or struct literal"
+    (let [surface (read-go/read-file
+                    (str "package p\n"
+                         "func Any() interface{} { return nil }\n"
+                         "func Pair() struct{ a, b int } { return struct{ a, b int }{} }\n"
+                         "func Both() (interface{}, error) { return nil, nil }\n"))]
+      (should= [["Any" 0 1] ["Pair" 0 1] ["Both" 0 2]]
+               (map (juxt :name :params :results) (:funcs surface)))))
+
   (it "ignores declarations inside comments, strings, and function bodies"
     (let [surface (read-go/read-file
                     (str "package p\n"
