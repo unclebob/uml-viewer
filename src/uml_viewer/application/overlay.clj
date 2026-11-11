@@ -100,10 +100,10 @@
     (str ns-name)))
 
 (defn- normalize-ns
-  "Crapper separates Rust with `::` and every other language with `.`."
+  "Crapper separates Rust with `::`, PHP with `\\`, and every other language with `.`."
   [s]
   (when s
-    (str/replace (str s) #"::" ".")))
+    (str/replace (str s) #"::|\\" ".")))
 
 (defn- prefix-name [prefix]
   (cond
