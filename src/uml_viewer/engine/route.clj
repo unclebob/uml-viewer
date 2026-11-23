@@ -57,8 +57,17 @@
           []
           pts))
 
+(defn- frame?
+  "A dummy that wraps real classes is a package frame, not an obstacle.
+  A dummy alone in its rect is a collapsed package: a visible box arrows must avoid."
+  [c classes]
+  (and (:dummy? c)
+       (some #(and (not (:dummy? %))
+                   (geom/inside? (:rect c) (geom/cx (:rect %)) (geom/cy (:rect %))))
+             classes)))
+
 (defn- path-hits? [pts from-id to-id classes]
-  (let [others (remove #(or (= (:id %) from-id) (= (:id %) to-id) (:dummy? %))
+  (let [others (remove #(or (= (:id %) from-id) (= (:id %) to-id) (frame? % classes))
                        classes)]
     (some (fn [[a b]]
             (some #(geom/segment-hits-rect? a b (:rect %)) others))
@@ -462,7 +471,39 @@
     (or (> (- (:y (:rect to)) (geom/bottom (:rect from))) 8)
         (> (- (:y (:rect from)) (geom/bottom (:rect to))) 8))))
 
-(defn- hop-candidates [from to from-t to-t i n classes lr?]
+(defn- span-bbox
+  "Box around `from`, `to` and every class on a rank between them."
+  [from to classes]
+  (let [lo (min (:rank from 0) (:rank to 0))
+        hi (max (:rank from 0) (:rank to 0))]
+    (geom/union (map :rect (concat [from to]
+                                   (filter #(< lo (:rank % 0) hi) classes))))))
+
+(defn- side-lane
+  "Route an edge that skips ranks outside every box in between: leave by a
+  side face, run in lane `lane` beyond the span, enter by the same side.
+  Edges toward higher ranks take one side and edges back take the other, so
+  arrows that point against the layering (the violations) read as a group."
+  [from to from-t to-t lane classes lr?]
+  (when (> (abs (- (:rank from 0) (:rank to 0))) 1)
+    (let [forward? (< (:rank from 0) (:rank to 0))
+          side (if lr? (if forward? :north :south) (if forward? :west :east))
+          {:keys [from-face to-face]} (side-faces side)
+          start (port from from-face from-t)
+          end (port to to-face to-t)
+          bb (span-bbox from to classes)
+          pad (* layout/lane-gap (+ 2 lane))]
+      (case side
+        :east (let [x (+ (geom/right bb) pad)]
+                (collapse [start [x (second start)] [x (second end)] end]))
+        :west (let [x (- (:x bb) pad)]
+                (collapse [start [x (second start)] [x (second end)] end]))
+        :south (let [y (+ (geom/bottom bb) pad)]
+                 (collapse [start [(first start) y] [(first end) y] end]))
+        :north (let [y (- (:y bb) pad)]
+                 (collapse [start [(first start) y] [(first end) y] end]))))))
+
+(defn- hop-candidates [from to from-t to-t i n lane classes lr?]
   (let [{:keys [from-face to-face]} (flow-faces from to lr?)
         start (port from from-face from-t)
         end (port to to-face to-t)
@@ -470,8 +511,24 @@
         primary (through-channel start end ch i n lr?)
         alt (through-channel start end ch (- n i 1) n lr?)
         via (through-intermediates from to start end classes i lr?)
-        sides (side-then-flow from to from-t to-t i lr?)]
-    (remove nil? (concat [primary] sides [via alt (collapse [start end])]))))
+        sides (side-then-flow from to from-t to-t i lr?)
+        lane-path (side-lane from to from-t to-t lane classes lr?)]
+    (remove nil? (concat [primary] sides [lane-path via alt (collapse [start end])]))))
+
+(defn- lane-index
+  "Lane per edge that skips ranks: per direction, shortest spans innermost,
+  so long edges wrap around short ones instead of crossing them."
+  [edges lr?]
+  (let [rank-of #(:rank % 0)
+        span #(abs (- (rank-of (:from-n %)) (rank-of (:to-n %))))
+        skips (filter #(and (stacked? (:from-n %) (:to-n %) lr?) (> (span %) 1)) edges)]
+    (into {}
+          (mapcat (fn [[_ group]]
+                    (map-indexed (fn [k e] [e k])
+                                 (sort-by (juxt span #(min (rank-of (:from-n %)) (rank-of (:to-n %)))
+                                                :from :to)
+                                          group)))
+                  (group-by #(< (rank-of (:from-n %)) (rank-of (:to-n %))) skips)))))
 
 (defn- port-t [groups sort-key]
   (into {}
@@ -511,7 +568,8 @@
                         (mapcat (fn [[k group]]
                                   (map-indexed (fn [i e] [e [i (count group)]])
                                                (sort-by (juxt :from :to) group)))
-                                hop-groups))]
+                                hop-groups))
+        lanes (lane-index annotated lr?)]
     (separate-ports
       (assoc scene
         :edges
@@ -529,7 +587,7 @@
                             (try-paths (hop-candidates from to
                                                        (from-t e 0.5)
                                                        (to-t e 0.5)
-                                                       i n classes lr?)
+                                                       i n (lanes e 0) classes lr?)
                                        (:id from) (:id to) classes))
                       pts (constrain-attach (:rect from) (:rect to) raw)]
                   (assoc (dissoc e :from-n :to-n)
