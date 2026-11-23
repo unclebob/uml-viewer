@@ -64,3 +64,31 @@
     (let [reverses? (ns-resolve 'uml-viewer.engine.route 'reverses-past-target?)]
       (should-not (reverses? [[0 0] [1 1]]))
       (should-not (reverses? [[0 0] [10 0] [0 0]])))))
+
+(def ^:private column
+  "Three collapsed packages stacked in one column, as Declutter classes draws a proposal."
+  [{:id :top :rank 0 :dummy? true :rect (geom/rect 0 0 100 50)}
+   {:id :mid :rank 1 :dummy? true :rect (geom/rect 0 100 100 50)}
+   {:id :bot :rank 2 :dummy? true :rect (geom/rect 0 200 100 50)}])
+
+(describe "collapsed packages"
+  (it "treats a lone dummy as a box to avoid, and a dummy around real classes as a frame"
+    (let [hits? (ns-resolve 'uml-viewer.engine.route 'path-hits?)
+          frame {:id :frame :dummy? true :rect (geom/rect 0 90 100 70)}
+          inner {:id :inner :rect (geom/rect 20 110 60 30)}
+          beside-inner [[10 50] [10 200]]]
+      (should (hits? [[50 50] [50 200]] :top :bot column))
+      (should-not (hits? beside-inner :top :bot [(first column) frame inner (last column)]))
+      (should (hits? beside-inner :top :bot [(first column) frame (last column)]))))
+
+  (it "routes an edge that skips a rank in a side lane clear of the box between"
+    (let [lane (ns-resolve 'uml-viewer.engine.route 'side-lane)
+          hits? (ns-resolve 'uml-viewer.engine.route 'path-hits?)
+          [top _ bot] column
+          down (lane top bot 0.5 0.5 0 column false)
+          up (lane bot top 0.5 0.5 0 column false)]
+      (should-not (hits? down :top :bot column))
+      (should-not (hits? up :bot :top column))
+      (should (< (apply min (map first down)) 0))
+      (should (> (apply max (map first up)) 100))
+      (should-be-nil (lane top (second column) 0.5 0.5 0 column false)))))
